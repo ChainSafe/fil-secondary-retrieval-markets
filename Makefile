@@ -19,3 +19,6 @@ lint: $(GOLANGCI)
 test:
 	go test ./...
 
+license:
+	./scripts/add_license.sh
+

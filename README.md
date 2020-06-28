@@ -1,5 +1,3 @@
-# Go Repo Template
+# Filecoin Secondary Markets
 
-## TODO
-- [ ] Add license
-- [ ] Update `go.mod` with package path
+### [WIP]

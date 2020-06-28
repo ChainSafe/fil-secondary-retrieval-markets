@@ -14,9 +14,10 @@ jobs:
   include:
     - language: go
       go: 1.13.x
-      name: "Linter"
+      name: "Linter and License Check"
       script:
         - make lint
+        - make license
     - language: go
       go: 1.13.x
       name: "Test"

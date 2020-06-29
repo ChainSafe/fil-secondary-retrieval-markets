@@ -2,33 +2,26 @@ package network
 
 import (
 	"context"
+	"log"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	ma "github.com/multiformats/go-multiaddr"
 )
 
 var baseID = "/fil/"
 var marketsID = baseID + "markets"
 
 // Network is the p2p level interface requires by the markets module
-// TODO: is this a good name? would something like Service be better?
 type Network interface {
 	Start() error
 	Stop() error
 	AddrInfo() peer.AddrInfo
-
-	// Connect connects directly to a peer
 	Connect(peer.AddrInfo) error
-
-	// Next returns the next message in the subscription to marketsID
-	Next() (*pubsub.Message, error)
-
-	// Publish publishes some data
-	Publish(string, []byte) error
+	Messages() <-chan *pubsub.Message
+	Publish([]byte) error
 }
 
 // Host wraps a libp2p host. It contains the current pubsub state.
@@ -39,15 +32,15 @@ type Host struct {
 	pubsub       *pubsub.PubSub
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
+	msgs         chan *pubsub.Message
 }
 
 type Config struct {
-	Bootnodes []string
+	Bootnodes []peer.AddrInfo
 	Identity  crypto.PrivKey
 }
 
 // NewHost returns a Host
-// TODO: bootnodes
 func NewHost(cfg *Config) (*Host, error) {
 	if cfg == nil {
 		return nil, ErrNoConfig
@@ -65,7 +58,12 @@ func NewHost(cfg *Config) (*Host, error) {
 		return nil, err
 	}
 
-	ps, err := pubsub.NewGossipSub(ctx, h)
+	psOpts := []pubsub.Option{
+		pubsub.WithDirectPeers(cfg.Bootnodes),
+		pubsub.WithFloodPublish(true),
+	}
+
+	ps, err := pubsub.NewGossipSub(ctx, h, psOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,22 +72,13 @@ func NewHost(cfg *Config) (*Host, error) {
 		ctx:    ctx,
 		host:   h,
 		pubsub: ps,
+		msgs:   make(chan *pubsub.Message),
 	}, nil
 }
 
-func bootstrap(ctx context.Context, h host.Host, bns []string) error {
+func bootstrap(ctx context.Context, h host.Host, bns []peer.AddrInfo) error {
 	for _, bn := range bns {
-		maddr, err := ma.NewMultiaddr(bn)
-		if err != nil {
-			return err
-		}
-
-		info, err := peer.AddrInfoFromP2pAddr(maddr)
-		if err != nil {
-			return err
-		}
-
-		err = h.Connect(ctx, *info)
+		err := h.Connect(ctx, bn)
 		if err != nil {
 			return err
 		}
@@ -123,6 +112,7 @@ func (h *Host) Start() error {
 		return err
 	}
 
+	go h.handleMessages()
 	return nil
 }
 
@@ -147,6 +137,23 @@ func (h *Host) Publish(data []byte) error {
 	return h.topic.Publish(h.ctx, data)
 }
 
-func (h *Host) Next() (*pubsub.Message, error) {
+func (h *Host) Messages() <-chan *pubsub.Message {
+	return h.msgs
+}
+
+func (h *Host) handleMessages() {
+	for {
+		msg, err := h.next()
+		if err != nil {
+			// TODO: logger
+			log.Println("could not receive msg:", err)
+		}
+
+		h.msgs <- msg
+	}
+}
+
+// Next returns the next message in the subscription
+func (h *Host) next() (*pubsub.Message, error) {
 	return h.subscription.Next(h.ctx)
 }

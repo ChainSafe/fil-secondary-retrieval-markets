@@ -52,7 +52,13 @@ func NewHost(cfg *Config) (*Host, error) {
 
 	ctx := context.Background()
 
-	h, err := libp2p.New(ctx)
+	hostOpts := []libp2p.Option{}
+
+	if cfg.Identity != nil {
+		hostOpts = append(hostOpts, libp2p.Identity(cfg.Identity))
+	}
+
+	h, err := libp2p.New(ctx, hostOpts...)
 	if err != nil {
 		return nil, err
 	}

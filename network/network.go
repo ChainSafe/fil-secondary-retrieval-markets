@@ -35,6 +35,7 @@ type Host struct {
 	msgs         chan *pubsub.Message
 }
 
+// Config contains the configuration options for the host
 type Config struct {
 	Bootnodes []peer.AddrInfo
 	Identity  crypto.PrivKey
@@ -74,17 +75,6 @@ func NewHost(cfg *Config) (*Host, error) {
 		pubsub: ps,
 		msgs:   make(chan *pubsub.Message),
 	}, nil
-}
-
-func bootstrap(ctx context.Context, h host.Host, bns []peer.AddrInfo) error {
-	for _, bn := range bns {
-		err := h.Connect(ctx, bn)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // AddrInfo returns the host's AddrInfo
@@ -137,10 +127,12 @@ func (h *Host) Publish(data []byte) error {
 	return h.topic.Publish(h.ctx, data)
 }
 
+// Messages returns the receive-only pubsub message channel
 func (h *Host) Messages() <-chan *pubsub.Message {
 	return h.msgs
 }
 
+// handleMessages puts each message received through the host's subscription into the host's msgs channel
 func (h *Host) handleMessages() {
 	for {
 		msg, err := h.next()
@@ -153,7 +145,18 @@ func (h *Host) handleMessages() {
 	}
 }
 
-// Next returns the next message in the subscription
+// next returns the next message in the subscription
 func (h *Host) next() (*pubsub.Message, error) {
 	return h.subscription.Next(h.ctx)
+}
+
+func bootstrap(ctx context.Context, h host.Host, bns []peer.AddrInfo) error {
+	for _, bn := range bns {
+		err := h.Connect(ctx, bn)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

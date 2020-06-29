@@ -4,9 +4,11 @@ import (
 	"context"
 
 	libp2p "github.com/libp2p/go-libp2p"
-	host "github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	ma "github.com/multiformats/go-multiaddr"
 )
 
 var baseID = "/fil/"
@@ -41,12 +43,26 @@ type Host struct {
 	subscriptions map[string]*pubsub.Subscription
 }
 
+type Config struct {
+	Bootnodes []string
+	Identity  crypto.PrivKey
+}
+
 // NewHost returns a Host
 // TODO: bootnodes
-func NewHost() (*Host, error) {
+func NewHost(cfg *Config) (*Host, error) {
+	if cfg == nil {
+		return nil, ErrNoConfig
+	}
+
 	ctx := context.Background()
 
 	h, err := libp2p.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bootstrap(ctx, h, cfg.Bootnodes)
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +79,27 @@ func NewHost() (*Host, error) {
 		topics:        make(map[string]*pubsub.Topic),
 		subscriptions: make(map[string]*pubsub.Subscription),
 	}, nil
+}
+
+func bootstrap(ctx context.Context, h host.Host, bns []string) error {
+	for _, bn := range bns {
+		maddr, err := ma.NewMultiaddr(bn)
+		if err != nil {
+			return err
+		}
+
+		info, err := peer.AddrInfoFromP2pAddr(maddr)
+		if err != nil {
+			return err
+		}
+
+		err = h.Connect(ctx, *info)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Start begins pubsub by subscribing to the markets topic

@@ -1,3 +1,3 @@
-module github.com/ChainSafe/go-template
+module github.com/ChainSafe/fil-secondary-retrieval-markets
 
 go 1.13

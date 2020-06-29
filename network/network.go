@@ -19,28 +19,26 @@ var marketsID = baseID + "markets"
 type Network interface {
 	Start() error
 	Stop() error
+	AddrInfo() peer.AddrInfo
 
 	// Connect connects directly to a peer
 	Connect(peer.AddrInfo) error
 
-	// Publish publishes some data to a topic
+	// Next returns the next message in the subscription to marketsID
+	Next() (*pubsub.Message, error)
+
+	// Publish publishes some data
 	Publish(string, []byte) error
-
-	// Subscribe returns a subscription to a topic
-	Subscribe(string) (*pubsub.Subscription, error)
-
-	// Unsubscribe cancels a subscription to a topic, if there is one
-	Unsubscribe(string)
 }
 
 // Host wraps a libp2p host. It contains the current pubsub state.
 // Host implements the Network interface
 type Host struct {
-	ctx           context.Context
-	host          host.Host
-	pubsub        *pubsub.PubSub
-	topics        map[string]*pubsub.Topic
-	subscriptions map[string]*pubsub.Subscription
+	ctx          context.Context
+	host         host.Host
+	pubsub       *pubsub.PubSub
+	topic        *pubsub.Topic
+	subscription *pubsub.Subscription
 }
 
 type Config struct {
@@ -73,11 +71,9 @@ func NewHost(cfg *Config) (*Host, error) {
 	}
 
 	return &Host{
-		ctx:           ctx,
-		host:          h,
-		pubsub:        ps,
-		topics:        make(map[string]*pubsub.Topic),
-		subscriptions: make(map[string]*pubsub.Subscription),
+		ctx:    ctx,
+		host:   h,
+		pubsub: ps,
 	}, nil
 }
 
@@ -102,38 +98,40 @@ func bootstrap(ctx context.Context, h host.Host, bns []string) error {
 	return nil
 }
 
+// AddrInfo returns the host's AddrInfo
+func (h *Host) AddrInfo() peer.AddrInfo {
+	maddrs := h.host.Addrs()
+	id := h.host.ID()
+
+	return peer.AddrInfo{
+		ID:    id,
+		Addrs: maddrs,
+	}
+}
+
 // Start begins pubsub by subscribing to the markets topic
 // TODO: hello protocol
 func (h *Host) Start() error {
-	// TODO: determine what protocol we are using
-	t, err := h.pubsub.Join(marketsID)
+	var err error
+	h.topic, err = h.pubsub.Join(marketsID)
 	if err != nil {
 		return err
 	}
 
-	h.topics[marketsID] = t
-
-	s, err := t.Subscribe()
+	h.subscription, err = h.topic.Subscribe()
 	if err != nil {
 		return err
 	}
-
-	h.subscriptions[marketsID] = s
 
 	return nil
 }
 
 // Stop cancels all subscriptions and shuts down the host.
 func (h *Host) Stop() error {
-	for _, s := range h.subscriptions {
-		s.Cancel()
-	}
-
-	for _, t := range h.topics {
-		err := t.Close()
-		if err != nil {
-			return err
-		}
+	h.subscription.Cancel()
+	err := h.topic.Close()
+	if err != nil {
+		return err
 	}
 
 	return h.host.Close()
@@ -144,55 +142,11 @@ func (h *Host) Connect(p peer.AddrInfo) error {
 	return h.host.Connect(h.ctx, p)
 }
 
-// Publish publishes some data to a topic
-// TODO: is there a need for sub-topics under the main marketsID?
-func (h *Host) Publish(topic string, data []byte) error {
-	t, err := h.join(topic)
-	if err != nil {
-		return err
-	}
-
-	return t.Publish(h.ctx, data)
+// Publish publishes some data
+func (h *Host) Publish(data []byte) error {
+	return h.topic.Publish(h.ctx, data)
 }
 
-// Subscribe returns a subscription to a topic
-// TODO: do we want to wrap the pubsub.Subscription type with our own type to allow for a channel?
-func (h *Host) Subscribe(topic string) (*pubsub.Subscription, error) {
-	t, err := h.join(topic)
-	if err != nil {
-		return nil, err
-	}
-
-	s, err := t.Subscribe()
-	if err != nil {
-		return nil, err
-	}
-
-	h.subscriptions[topic] = s
-	return s, nil
-}
-
-// Unsubscribe cancels a subscription to a topic, if there is one
-func (h *Host) Unsubscribe(topic string) {
-	mt := marketsTopic(topic)
-	if h.subscriptions[mt] != nil {
-		h.subscriptions[mt].Cancel()
-	}
-}
-
-// join joins a topic, if the host hasn't already joined it
-func (h *Host) join(topic string) (*pubsub.Topic, error) {
-	if h.topics[topic] == nil {
-		var err error
-		h.topics[topic], err = h.pubsub.Join(marketsTopic(topic))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return h.topics[topic], nil
-}
-
-func marketsTopic(topic string) string {
-	return marketsID + topic
+func (h *Host) Next() (*pubsub.Message, error) {
+	return h.subscription.Next(h.ctx)
 }

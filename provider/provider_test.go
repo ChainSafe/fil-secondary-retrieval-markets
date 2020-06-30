@@ -4,10 +4,15 @@
 package provider
 
 import (
+	"context"
 	"testing"
+
+	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/stretchr/testify/require"
 )
+
+var testMultiAddrStr = "/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N"
 
 type mockHost struct {
 	msgs chan []byte
@@ -29,6 +34,18 @@ func (h *mockHost) Stop() error {
 
 func (h *mockHost) Messages() <-chan []byte {
 	return h.msgs
+}
+
+func (h *mockHost) MultiAddrs() []string {
+	return []string{testMultiAddrStr}
+}
+
+func (h *mockHost) Connect(p peer.AddrInfo) error {
+	return nil
+}
+
+func (h *mockHost) Send(context.Context, peer.ID, []byte) error {
+	return nil
 }
 
 func TestProvider(t *testing.T) {

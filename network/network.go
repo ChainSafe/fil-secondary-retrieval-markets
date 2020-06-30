@@ -5,7 +5,6 @@ package network
 
 import (
 	"context"
-	"log"
 
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
@@ -29,7 +28,7 @@ type Host struct {
 	pubsub       *pubsub.PubSub
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
-	msgs         chan *pubsub.Message
+	msgs         chan []byte
 }
 
 // Config contains the configuration options for the host
@@ -79,7 +78,7 @@ func NewHost(cfg *Config) (*Host, error) {
 		host:   h,
 		dht:    dht,
 		pubsub: ps,
-		msgs:   make(chan *pubsub.Message),
+		msgs:   make(chan []byte),
 	}, nil
 }
 
@@ -141,7 +140,7 @@ func (h *Host) Publish(data []byte) error {
 }
 
 // Messages returns the receive-only pubsub message channel
-func (h *Host) Messages() <-chan *pubsub.Message {
+func (h *Host) Messages() <-chan []byte {
 	return h.msgs
 }
 
@@ -149,12 +148,13 @@ func (h *Host) Messages() <-chan *pubsub.Message {
 func (h *Host) handleMessages() {
 	for {
 		msg, err := h.next()
-		if err != nil {
+		if err != nil { //nolint
 			// TODO: logger
-			log.Println("could not receive msg:", err)
 		}
 
-		h.msgs <- msg
+		if msg != nil {
+			h.msgs <- msg.Data
+		}
 	}
 }
 

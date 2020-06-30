@@ -8,8 +8,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-// AddrToAddrInfo converts a multiaddress string with peer ID to AddrInfo
-func AddrToAddrInfo(s string) (peer.AddrInfo, error) {
+// StringToAddrInfo converts a multiaddress string with peer ID to AddrInfo
+func StringToAddrInfo(s string) (peer.AddrInfo, error) {
 	maddr, err := multiaddr.NewMultiaddr(s)
 	if err != nil {
 		return peer.AddrInfo{}, err
@@ -21,11 +21,11 @@ func AddrToAddrInfo(s string) (peer.AddrInfo, error) {
 	return *p, err
 }
 
-// AddrsToAddrInfos converts an array of multiaddress strings to AddrInfos
-func AddrsToAddrInfos(peers []string) ([]peer.AddrInfo, error) {
+// StringsToAddrInfos converts an array of multiaddress strings to AddrInfos
+func StringsToAddrInfos(peers []string) ([]peer.AddrInfo, error) {
 	pinfos := make([]peer.AddrInfo, len(peers))
 	for i, p := range peers {
-		p, err := AddrToAddrInfo(p)
+		p, err := StringToAddrInfo(p)
 		if err != nil {
 			return nil, err
 		}

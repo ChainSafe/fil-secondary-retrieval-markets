@@ -71,7 +71,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 		PaymentIntervalIncrease: 0,
 	}
 
-	addrs, err := shared.AddrsToAddrInfos(query.Client)
+	addrs, err := shared.StringsToAddrInfos(query.Client)
 	if err != nil {
 		return err
 	}
@@ -93,6 +93,8 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 		return err
 	}
 
+	// TODO: if we open up a substream with the client, what protocol ID do we use?
+	// or do we use the existing /fil/markets stream?
 	return p.host.Send(context.Background(), addrs[0].ID, bz)
 }
 

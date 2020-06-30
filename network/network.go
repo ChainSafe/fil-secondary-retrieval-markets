@@ -17,20 +17,9 @@ import (
 var baseID = "/fil/"
 var marketsID = baseID + "markets"
 
-// Network is the p2p level interface requires by the markets module
-type Network interface {
-	Start() error
-	Stop() error
-	AddrInfo() peer.AddrInfo
-	Connect(peer.AddrInfo) error
-	Messages() <-chan *pubsub.Message
-	Publish([]byte) error
-}
-
 // Host wraps a libp2p host. It contains the current pubsub state.
 // Host implements the Network interface
 type Host struct {
-	ctx          context.Context
 	host         host.Host
 	pubsub       *pubsub.PubSub
 	topic        *pubsub.Topic
@@ -79,7 +68,6 @@ func NewHost(cfg *Config) (*Host, error) {
 	}
 
 	return &Host{
-		ctx:    ctx,
 		host:   h,
 		pubsub: ps,
 		msgs:   make(chan *pubsub.Message),
@@ -128,12 +116,14 @@ func (h *Host) Stop() error {
 
 // Connect connects directly to a peer
 func (h *Host) Connect(p peer.AddrInfo) error {
-	return h.host.Connect(h.ctx, p)
+	ctx := context.Background()
+	return h.host.Connect(ctx, p)
 }
 
 // Publish publishes some data
 func (h *Host) Publish(data []byte) error {
-	return h.topic.Publish(h.ctx, data)
+	ctx := context.Background()
+	return h.topic.Publish(ctx, data)
 }
 
 // Messages returns the receive-only pubsub message channel
@@ -156,7 +146,8 @@ func (h *Host) handleMessages() {
 
 // next returns the next message in the subscription
 func (h *Host) next() (*pubsub.Message, error) {
-	return h.subscription.Next(h.ctx)
+	ctx := context.Background()
+	return h.subscription.Next(ctx)
 }
 
 func bootstrap(ctx context.Context, h host.Host, bns []peer.AddrInfo) error {

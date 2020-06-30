@@ -10,9 +10,11 @@ import (
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/require"
 )
+
+var testMultiAddr = multiaddr.StringCast("/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 
 type mockHost struct{ queries []shared.Query }
 
@@ -27,6 +29,12 @@ func (h *mockHost) Publish(ctx context.Context, data []byte) error {
 	return nil
 }
 
+func (h *mockHost) MultiAddrs() []string {
+	return []string{
+		testMultiAddr.String(),
+	}
+}
+
 func TestClient_SubmitQuery(t *testing.T) {
 	host := &mockHost{queries: []shared.Query{}}
 	client := NewClient(host)
@@ -34,15 +42,12 @@ func TestClient_SubmitQuery(t *testing.T) {
 	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
 	require.NoError(t, err)
 
-	testPeer, err := peer.Decode("QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
-	require.NoError(t, err)
-
 	query := shared.Query{
 		PayloadCID: testCid,
-		Client:     testPeer,
+		Client:     []string{testMultiAddr.String()},
 	}
 
-	err = client.SubmitQuery(context.Background(), query)
+	err = client.SubmitQuery(context.Background(), testCid)
 	require.NoError(t, err)
 
 	require.ElementsMatch(t, []shared.Query{query}, host.queries)

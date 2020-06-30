@@ -11,4 +11,6 @@ import (
 type Host interface {
 	// Publish broadcasts a message over pub sub on the default topic
 	Publish(context.Context, []byte) error
+	// Returns all the hosts multiaddrs
+	MultiAddrs() []string
 }

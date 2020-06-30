@@ -136,7 +136,6 @@ func (h *Host) handleMessages() {
 		msg, err := h.next()
 		if err != nil {
 			// TODO: logger
-			// log.Println("could not receive msg:", err)
 		}
 
 		if msg != nil {

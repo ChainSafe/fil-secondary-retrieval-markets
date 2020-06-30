@@ -5,7 +5,6 @@ package network
 
 import (
 	"context"
-	"log"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -24,7 +23,7 @@ type Host struct {
 	pubsub       *pubsub.PubSub
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
-	msgs         chan *pubsub.Message
+	msgs         chan []byte
 }
 
 // Config contains the configuration options for the host
@@ -70,7 +69,7 @@ func NewHost(cfg *Config) (*Host, error) {
 	return &Host{
 		host:   h,
 		pubsub: ps,
-		msgs:   make(chan *pubsub.Message),
+		msgs:   make(chan []byte),
 	}, nil
 }
 
@@ -127,7 +126,7 @@ func (h *Host) Publish(data []byte) error {
 }
 
 // Messages returns the receive-only pubsub message channel
-func (h *Host) Messages() <-chan *pubsub.Message {
+func (h *Host) Messages() <-chan []byte {
 	return h.msgs
 }
 
@@ -137,10 +136,12 @@ func (h *Host) handleMessages() {
 		msg, err := h.next()
 		if err != nil {
 			// TODO: logger
-			log.Println("could not receive msg:", err)
+			// log.Println("could not receive msg:", err)
 		}
 
-		h.msgs <- msg
+		if msg != nil {
+			h.msgs <- msg.Data
+		}
 	}
 }
 

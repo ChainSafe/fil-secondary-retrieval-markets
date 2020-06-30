@@ -6,11 +6,15 @@ package network
 import (
 	"context"
 
+	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/sync"
 	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
+	kaddht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	rhost "github.com/libp2p/go-libp2p/p2p/host/routed"
 )
 
 var baseID = "/fil/"
@@ -20,6 +24,7 @@ var marketsID = baseID + "markets"
 // Host implements the Network interface
 type Host struct {
 	host         host.Host
+	dht          *kaddht.IpfsDHT
 	pubsub       *pubsub.PubSub
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
@@ -56,6 +61,9 @@ func NewHost(cfg *Config) (*Host, error) {
 		return nil, err
 	}
 
+	dht := kaddht.NewDHT(ctx, h, sync.MutexWrap(ds.NewMapDatastore()))
+	h = rhost.Wrap(h, dht)
+
 	psOpts := []pubsub.Option{
 		pubsub.WithDirectPeers(cfg.Bootnodes),
 		pubsub.WithFloodPublish(true),
@@ -68,6 +76,7 @@ func NewHost(cfg *Config) (*Host, error) {
 
 	return &Host{
 		host:   h,
+		dht:    dht,
 		pubsub: ps,
 		msgs:   make(chan []byte),
 	}, nil
@@ -106,6 +115,11 @@ func (h *Host) Start() error {
 func (h *Host) Stop() error {
 	h.subscription.Cancel()
 	err := h.topic.Close()
+	if err != nil {
+		return err
+	}
+
+	err = h.dht.Close()
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package types
+package shared
 
 import (
 	"github.com/ipfs/go-cid"

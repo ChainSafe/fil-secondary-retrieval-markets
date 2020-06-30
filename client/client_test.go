@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/ChainSafe/fil-secondary-retrieval-markets/types"
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/stretchr/testify/require"
 )
 
-type mockHost struct{ queries []types.Query }
+type mockHost struct{ queries []shared.Query }
 
 func (h *mockHost) Publish(ctx context.Context, data []byte) error {
-	var query types.Query
+	var query shared.Query
 	err := json.Unmarshal(data, &query)
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (h *mockHost) Publish(ctx context.Context, data []byte) error {
 }
 
 func TestClient_SubmitQuery(t *testing.T) {
-	host := &mockHost{queries: []types.Query{}}
+	host := &mockHost{queries: []shared.Query{}}
 	client := NewClient(host)
 
 	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
@@ -34,7 +34,7 @@ func TestClient_SubmitQuery(t *testing.T) {
 	testPeer, err := peer.Decode("QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 	require.NoError(t, err)
 
-	query := types.Query{
+	query := shared.Query{
 		PayloadCID: testCid,
 		Client:     testPeer,
 	}
@@ -42,5 +42,5 @@ func TestClient_SubmitQuery(t *testing.T) {
 	err = client.SubmitQuery(context.Background(), query)
 	require.NoError(t, err)
 
-	require.ElementsMatch(t, []types.Query{query}, host.queries)
+	require.ElementsMatch(t, []shared.Query{query}, host.queries)
 }

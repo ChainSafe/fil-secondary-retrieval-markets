@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/ChainSafe/fil-secondary-retrieval-markets/types"
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 )
 
 type Client struct {
@@ -19,7 +19,7 @@ func NewClient(host Host) *Client {
 }
 
 // SubmitQuery encodes a query a submits it to the network to be gossiped
-func (c *Client) SubmitQuery(ctx context.Context, query types.Query) error {
+func (c *Client) SubmitQuery(ctx context.Context, query shared.Query) error {
 	bz, err := json.Marshal(query)
 	if err != nil {
 		return err

@@ -134,7 +134,7 @@ func (h *Host) Messages() <-chan []byte {
 func (h *Host) handleMessages() {
 	for {
 		msg, err := h.next()
-		if err != nil {
+		if err != nil { //nolint
 			// TODO: logger
 		}
 

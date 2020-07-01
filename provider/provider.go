@@ -5,7 +5,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"math/big"
 
@@ -46,13 +45,14 @@ func (p *Provider) Stop() error {
 func (p *Provider) handleMessages() {
 	for msg := range p.msgs {
 		query := new(shared.Query)
-		err := json.Unmarshal(msg, query)
+		err := query.Unmarshal(msg)
 		if err != nil {
 			log.Println("cannot unmarshal query; error:", err)
 			continue
 		}
 
 		log.Println("received query!", query)
+
 		if p.hasData(query.PayloadCID) {
 			err = p.sendResponse(query)
 			if err != nil {
@@ -63,6 +63,10 @@ func (p *Provider) handleMessages() {
 }
 
 func (p *Provider) sendResponse(query *shared.Query) error {
+	if len(query.Client) == 0 {
+		return ErrNoAddrsProvided
+	}
+
 	resp := &shared.QueryResponse{
 		PayloadCID:              query.PayloadCID,
 		Provider:                p.host.MultiAddrs(),
@@ -88,7 +92,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 		}
 	}
 
-	bz, err := json.Marshal(resp)
+	bz, err := resp.Marshal()
 	if err != nil {
 		return err
 	}

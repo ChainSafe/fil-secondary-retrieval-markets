@@ -4,6 +4,7 @@
 package shared
 
 import (
+	"encoding/json"
 	"math/big"
 
 	"github.com/ipfs/go-cid"
@@ -15,6 +16,16 @@ type Query struct {
 	Client     []string `json:"client"`     // List of multiaddrs of the client
 }
 
+// Marshal returns the JSON marshalled Query
+func (q *Query) Marshal() ([]byte, error) {
+	return json.Marshal(q)
+}
+
+// Unmarshal JSON unmarshals the input into a Query
+func (q *Query) Unmarshal(bz []byte) error {
+	return json.Unmarshal(bz, q)
+}
+
 // QueryResponse is returned from a provider to a client if the provider has the requested data
 type QueryResponse struct {
 	PayloadCID              cid.Cid  `json:"payloadCID"` // CID of data being requested
@@ -22,4 +33,14 @@ type QueryResponse struct {
 	Total                   *big.Int `json:"total"`      // Total cost
 	PaymentInterval         uint64   `json:"paymentInterval"`
 	PaymentIntervalIncrease uint64   `json:"paymentIntervalIncrease"`
+}
+
+// Marshal returns the JSON marshalled QueryResponse
+func (q *QueryResponse) Marshal() ([]byte, error) {
+	return json.Marshal(q)
+}
+
+// Unmarshal JSON unmarshals the input into a QueryResponse
+func (q *QueryResponse) Unmarshal(bz []byte) error {
+	return json.Unmarshal(bz, q)
 }

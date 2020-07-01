@@ -6,6 +6,7 @@ package network
 import (
 	"testing"
 
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/stretchr/testify/require"
@@ -52,5 +53,5 @@ func TestPubSubTopics(t *testing.T) {
 
 	topics := host.pubsub.GetTopics()
 	require.Equal(t, 1, len(topics))
-	require.Equal(t, marketsID, topics[0])
+	require.Equal(t, string(shared.RetrievalProtocolID), topics[0])
 }

@@ -5,6 +5,8 @@ package client
 
 import (
 	"context"
+
+	"github.com/libp2p/go-libp2p-core/network"
 )
 
 // Host defines the libp2p host used by the client
@@ -13,4 +15,6 @@ type Host interface {
 	Publish(context.Context, []byte) error
 	// Returns all the hosts multiaddrs
 	MultiAddrs() []string
+
+	RegisterStreamHandler(handler network.StreamHandler)
 }

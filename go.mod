@@ -3,7 +3,6 @@ module github.com/ChainSafe/fil-secondary-retrieval-markets
 go 1.13
 
 require (
-	github.com/go-interpreter/wagon v0.6.0
 	github.com/ipfs/go-cid v0.0.6
 	github.com/ipfs/go-datastore v0.4.4
 	github.com/libp2p/go-libp2p v0.10.0

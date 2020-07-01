@@ -8,12 +8,13 @@ import (
 	"math/big"
 
 	"github.com/ipfs/go-cid"
+	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 // Query is submitted by clients and observed by providers
 type Query struct {
-	PayloadCID cid.Cid  `json:"payloadCID"` // CID of data being requested
-	Client     []string `json:"client"`     // List of multiaddrs of the client
+	PayloadCID  cid.Cid  `json:"payloadCID"`  // CID of data being requested
+	ClientAddrs []string `json:"clientAddrs"` // List of multiaddrs of the client
 }
 
 // Marshal returns the JSON marshalled Query
@@ -28,9 +29,10 @@ func (q *Query) Unmarshal(bz []byte) error {
 
 // QueryResponse is returned from a provider to a client if the provider has the requested data
 type QueryResponse struct {
-	PayloadCID              cid.Cid  `json:"payloadCID"` // CID of data being requested
-	Provider                []string `json:"provider"`   // List of multiaddrs of the provider
-	Total                   *big.Int `json:"total"`      // Total cost
+	PayloadCID cid.Cid `json:"payloadCID"` // CID of data being requested
+	// TODO: Do we need their FIL address as well?
+	Provider                peer.ID  `json:"provider"` // List of multiaddrs of the provider
+	Total                   *big.Int `json:"total"`    // Total cost
 	PaymentInterval         uint64   `json:"paymentInterval"`
 	PaymentIntervalIncrease uint64   `json:"paymentIntervalIncrease"`
 }

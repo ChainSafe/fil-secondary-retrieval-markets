@@ -6,19 +6,19 @@ package network
 import (
 	"context"
 
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
 	libp2p "github.com/libp2p/go-libp2p"
+	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/network"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	kaddht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	rhost "github.com/libp2p/go-libp2p/p2p/host/routed"
 )
-
-var baseID = "/fil/"
-var marketsID = baseID + "markets"
 
 // Host wraps a libp2p host. It contains the current pubsub state.
 // Host implements the Network interface
@@ -97,7 +97,7 @@ func (h *Host) AddrInfo() peer.AddrInfo {
 // TODO: hello protocol
 func (h *Host) Start() error {
 	var err error
-	h.topic, err = h.pubsub.Join(marketsID)
+	h.topic, err = h.pubsub.Join(string(shared.RetrievalProtocolID))
 	if err != nil {
 		return err
 	}
@@ -125,6 +125,11 @@ func (h *Host) Stop() error {
 	}
 
 	return h.host.Close()
+}
+
+// RegisterStreamHandler registers a handler and protocol ID on the libp2p host
+func (h *Host) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {
+	h.host.SetStreamHandler(id, handler)
 }
 
 // Connect connects directly to a peer

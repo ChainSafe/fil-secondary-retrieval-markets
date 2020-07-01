@@ -65,19 +65,19 @@ func (p *Provider) handleMessages() {
 }
 
 func (p *Provider) sendResponse(query *shared.Query) error {
-	if len(query.Client) == 0 {
+	if len(query.ClientAddrs) == 0 {
 		return ErrNoAddrsProvided
 	}
 
 	resp := &shared.QueryResponse{
 		PayloadCID:              query.PayloadCID,
-		Provider:                p.host.MultiAddrs(),
+		Provider:                p.host.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,
 		PaymentIntervalIncrease: 0,
 	}
 
-	addrs, err := shared.StringsToAddrInfos(query.Client)
+	addrs, err := shared.StringsToAddrInfos(query.ClientAddrs)
 	if err != nil {
 		log.Error("cannot convert client addrs to multiaddrs; error: ", err)
 		return err

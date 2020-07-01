@@ -17,4 +17,5 @@ type Host interface {
 	MultiAddrs() []string
 	Connect(p peer.AddrInfo) error
 	Send(context.Context, peer.ID, []byte) error
+	PeerID() peer.ID
 }

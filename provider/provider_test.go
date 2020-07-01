@@ -54,6 +54,14 @@ func (h *mockHost) Send(ctx context.Context, id peer.ID, msg []byte) error {
 	return nil
 }
 
+func (h *mockHost) PeerID() peer.ID {
+	id, err := peer.Decode("QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 func TestProvider(t *testing.T) {
 	h := newMockHost()
 	p := NewProvider(h)
@@ -84,8 +92,8 @@ func TestProvider_Response(t *testing.T) {
 	require.NoError(t, err)
 
 	query := &shared.Query{
-		PayloadCID: testCid,
-		Client:     []string{testMultiAddrStr},
+		PayloadCID:  testCid,
+		ClientAddrs: []string{testMultiAddrStr},
 	}
 
 	bz, err := query.Marshal()
@@ -95,7 +103,7 @@ func TestProvider_Response(t *testing.T) {
 
 	resp := &shared.QueryResponse{
 		PayloadCID:              query.PayloadCID,
-		Provider:                h.MultiAddrs(),
+		Provider:                h.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,
 		PaymentIntervalIncrease: 0,

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
+	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
@@ -38,9 +39,7 @@ func (h *mockHost) MultiAddrs() []string {
 	}
 }
 
-func (h *mockHost) RegisterStreamHandler(handler network.StreamHandler) {
-	panic("not implemented")
-}
+func (h *mockHost) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {}
 
 func TestClient_SubmitQuery(t *testing.T) {
 	host := &mockHost{queries: []shared.Query{}}

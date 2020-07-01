@@ -22,7 +22,12 @@ type Client struct {
 }
 
 func NewClient(host Host) *Client {
-	return &Client{host: host}
+	c := &Client{host: host}
+
+	// Register handler for provider responses
+	c.host.RegisterStreamHandler(shared.RetrievalProtocolID, c.HandleProviderStream)
+
+	return c
 }
 
 // SubmitQuery encodes a query a submits it to the network to be gossiped

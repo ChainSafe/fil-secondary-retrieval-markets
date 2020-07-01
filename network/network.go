@@ -10,8 +10,10 @@ import (
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
 	libp2p "github.com/libp2p/go-libp2p"
+	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/network"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	kaddht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -123,6 +125,10 @@ func (h *Host) Stop() error {
 	}
 
 	return h.host.Close()
+}
+
+func (h *Host) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {
+	h.host.SetStreamHandler(id, handler)
 }
 
 // Connect connects directly to a peer

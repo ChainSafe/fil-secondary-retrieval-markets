@@ -98,7 +98,8 @@ func TestProvider_Response(t *testing.T) {
 	b := block.NewBlock([]byte("noot"))
 	testCid := b.Cid()
 
-	p.blockstore.Put(b)
+	err = p.blockstore.Put(b)
+	require.NoError(t, err)
 
 	query := &shared.Query{
 		PayloadCID:  testCid,

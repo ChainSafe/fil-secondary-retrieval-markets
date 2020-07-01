@@ -9,6 +9,7 @@ import (
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
+	logging "github.com/ipfs/go-log/v2"
 	libp2p "github.com/libp2p/go-libp2p"
 	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -19,6 +20,8 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	rhost "github.com/libp2p/go-libp2p/p2p/host/routed"
 )
+
+var log = logging.Logger("network")
 
 // Host wraps a libp2p host. It contains the current pubsub state.
 // Host implements the Network interface
@@ -153,8 +156,9 @@ func (h *Host) Messages() <-chan []byte {
 func (h *Host) handleMessages() {
 	for {
 		msg, err := h.next()
-		if err != nil { //nolint
-			// TODO: logger
+		if err != nil {
+			log.Warn("failed to get next message from subscription")
+			continue
 		}
 
 		if msg != nil {

@@ -5,12 +5,14 @@ package provider
 
 import (
 	"context"
-	"log"
 	"math/big"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 )
+
+var log = logging.Logger("provider")
 
 // Provider ...
 type Provider struct {
@@ -47,16 +49,16 @@ func (p *Provider) handleMessages() {
 		query := new(shared.Query)
 		err := query.Unmarshal(msg)
 		if err != nil {
-			log.Println("cannot unmarshal query; error:", err)
+			log.Error("cannot unmarshal query; error:", err)
 			continue
 		}
 
-		log.Println("received query!", query)
+		log.Info("received query!", query)
 
 		if p.hasData(query.PayloadCID) {
 			err = p.sendResponse(query)
 			if err != nil {
-				log.Println("cannot send response; error:", err)
+				log.Error("cannot send response; error: ", err)
 			}
 		}
 	}
@@ -77,6 +79,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 
 	addrs, err := shared.StringsToAddrInfos(query.Client)
 	if err != nil {
+		log.Error("cannot convert client addrs to multiaddrs; error: ", err)
 		return err
 	}
 
@@ -85,6 +88,8 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 		if err != nil {
 			// couldn't connect using any addrs
 			if i == len(addrs)-1 {
+				err = ErrCannotConnect(err)
+				log.Error("cannot connect to client with any given addrs; error: ", err)
 				return err
 			}
 

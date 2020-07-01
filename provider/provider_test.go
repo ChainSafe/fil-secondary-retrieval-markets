@@ -19,8 +19,8 @@ import (
 var testMultiAddrStr = "/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N"
 
 type mockHost struct {
-	msgs     chan []byte
-	received []byte
+	msgs chan []byte
+	sent []byte
 }
 
 func newMockHost() *mockHost {
@@ -50,7 +50,7 @@ func (h *mockHost) Connect(p peer.AddrInfo) error {
 }
 
 func (h *mockHost) Send(ctx context.Context, id peer.ID, msg []byte) error {
-	h.received = msg
+	h.sent = msg
 	return nil
 }
 
@@ -104,5 +104,5 @@ func TestProvider_Response(t *testing.T) {
 	expected, err := resp.Marshal()
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 10)
-	require.Equal(t, expected, h.received)
+	require.Equal(t, expected, h.sent)
 }

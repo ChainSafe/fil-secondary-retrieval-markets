@@ -127,6 +127,7 @@ func (h *Host) Stop() error {
 	return h.host.Close()
 }
 
+// RegisterStreamHandler registers a handler and protocol ID on the libp2p host
 func (h *Host) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {
 	h.host.SetStreamHandler(id, handler)
 }

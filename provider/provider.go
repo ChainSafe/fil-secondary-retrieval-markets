@@ -86,11 +86,11 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	for i, addr := range addrs {
 		err = p.host.Connect(addr)
 		if err != nil {
+			log.Error("failed to connect to addr: ", err)
+
 			// couldn't connect using any addrs
 			if i == len(addrs)-1 {
-				err = ErrCannotConnect(err)
-				log.Error("cannot connect to client with any given addrs; error: ", err)
-				return err
+				return ErrConnectFailed
 			}
 
 			continue

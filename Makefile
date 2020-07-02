@@ -11,9 +11,11 @@ help: Makefile
 	@echo
 
 $(GOLANGCI):
-	wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s latest
+	if [ ! -f ./bin/golangci-lint ]; then \
+		wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s latest; \
+	fi;
 
-lint: $(GOLANGCI)
+lint: $(GOLANGCI) license
 	./bin/golangci-lint run ./... --timeout 5m0s
 
 test:

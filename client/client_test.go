@@ -20,29 +20,29 @@ import (
 
 var testMultiAddr = multiaddr.StringCast("/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 
-type mockHost struct{ queries []shared.Query }
+type mockNetwork struct{ queries []shared.Query }
 
-func (h *mockHost) Publish(ctx context.Context, data []byte) error {
+func (n *mockNetwork) Publish(ctx context.Context, data []byte) error {
 	var query shared.Query
 	err := json.Unmarshal(data, &query)
 	if err != nil {
 		return err
 	}
 
-	h.queries = append(h.queries, query)
+	n.queries = append(n.queries, query)
 	return nil
 }
 
-func (h *mockHost) MultiAddrs() []string {
+func (n *mockNetwork) MultiAddrs() []string {
 	return []string{
 		testMultiAddr.String(),
 	}
 }
 
-func (h *mockHost) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {}
+func (n *mockNetwork) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {}
 
 func TestClient_SubmitQuery(t *testing.T) {
-	host := &mockHost{queries: []shared.Query{}}
+	host := &mockNetwork{queries: []shared.Query{}}
 	client := NewClient(host)
 
 	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
@@ -62,7 +62,7 @@ func TestClient_SubmitQuery(t *testing.T) {
 func TestClient_HandleProviderResponse(t *testing.T) {
 	t.Skip("test incomplete")
 
-	host := &mockHost{queries: []shared.Query{}}
+	host := &mockNetwork{queries: []shared.Query{}}
 	client := NewClient(host)
 
 	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")

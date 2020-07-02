@@ -10,8 +10,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 )
 
-// Host defines the libp2p host used by the client
-type Host interface {
+// Network defines the libp2p network interface used by the client
+type Network interface {
 	// Publish broadcasts a message over pub sub on the default topic
 	Publish(ctx context.Context, msg []byte) error
 	// Returns all the hosts multiaddrs

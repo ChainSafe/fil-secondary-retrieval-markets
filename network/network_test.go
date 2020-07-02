@@ -4,54 +4,49 @@
 package network
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
-	peer "github.com/libp2p/go-libp2p-core/peer"
+	libp2p "github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/host"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestStartAndStop(t *testing.T) {
-	host, err := NewHost(&Config{})
+func newTestHost(t *testing.T) host.Host {
+	ctx := context.Background()
+	h, err := libp2p.New(ctx)
 	require.NoError(t, err)
-
-	err = host.Start()
-	require.NoError(t, err)
-
-	err = host.Stop()
-	require.NoError(t, err)
+	return h
 }
 
-func TestBootstrap(t *testing.T) {
-	hostA, err := NewHost(&Config{})
+func TestStartAndStop(t *testing.T) {
+	h := newTestHost(t)
+	n, err := NewNetwork(h)
 	require.NoError(t, err)
 
-	hostB, err := NewHost(&Config{
-		Bootnodes: []peer.AddrInfo{hostA.AddrInfo()},
-	})
+	err = n.Start()
 	require.NoError(t, err)
 
-	peersA := hostA.host.Peerstore().Peers()
-	require.Equal(t, len(peersA), 2)
-
-	peersB := hostB.host.Peerstore().Peers()
-	require.Equal(t, len(peersB), 2)
+	err = n.Stop()
+	require.NoError(t, err)
 }
 
 func TestPubSubTopics(t *testing.T) {
-	host, err := NewHost(&Config{})
+	h := newTestHost(t)
+	n, err := NewNetwork(h)
 	require.NoError(t, err)
 
-	err = host.Start()
+	err = n.Start()
 	require.NoError(t, err)
 
 	defer func() {
-		err = host.Stop()
+		err = n.Stop()
 		require.NoError(t, err)
 	}()
 
-	topics := host.pubsub.GetTopics()
+	topics := n.pubsub.GetTopics()
 	require.Equal(t, 1, len(topics))
 	require.Equal(t, string(shared.RetrievalProtocolID), topics[0])
 }

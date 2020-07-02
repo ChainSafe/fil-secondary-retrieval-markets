@@ -18,14 +18,14 @@ import (
 var log = logging.Logger("client")
 
 type Client struct {
-	host Host
+	net Network
 }
 
-func NewClient(host Host) *Client {
-	c := &Client{host: host}
+func NewClient(net Network) *Client {
+	c := &Client{net: net}
 
 	// Register handler for provider responses
-	c.host.RegisterStreamHandler(shared.RetrievalProtocolID, c.HandleProviderStream)
+	c.net.RegisterStreamHandler(shared.RetrievalProtocolID, c.HandleProviderStream)
 
 	return c
 }
@@ -34,14 +34,14 @@ func NewClient(host Host) *Client {
 func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
 	query := shared.Query{
 		PayloadCID:  cid,
-		ClientAddrs: c.host.MultiAddrs(),
+		ClientAddrs: c.net.MultiAddrs(),
 	}
 	bz, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	err = c.host.Publish(ctx, bz)
+	err = c.net.Publish(ctx, bz)
 	if err != nil {
 		return err
 	}

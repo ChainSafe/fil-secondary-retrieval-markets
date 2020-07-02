@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
-	"github.com/ipfs/go-cid"
+	block "github.com/ipfs/go-block-format"
+	ds "github.com/ipfs/go-datastore"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/stretchr/testify/require"
@@ -62,9 +64,14 @@ func (n *mockNetwork) PeerID() peer.ID {
 	return id
 }
 
+func newTestBlockstore() blockstore.Blockstore {
+	nds := ds.NewMapDatastore()
+	return blockstore.NewBlockstore(nds)
+}
+
 func TestProvider(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n)
+	p := NewProvider(n, newTestBlockstore())
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -79,7 +86,7 @@ func TestProvider(t *testing.T) {
 
 func TestProvider_Response(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n)
+	p := NewProvider(n, newTestBlockstore())
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -88,7 +95,10 @@ func TestProvider_Response(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
+	b := block.NewBlock([]byte("noot"))
+	testCid := b.Cid()
+
+	err = p.blockstore.Put(b)
 	require.NoError(t, err)
 
 	query := &shared.Query{

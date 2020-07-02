@@ -9,6 +9,7 @@ import (
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	logging "github.com/ipfs/go-log/v2"
 )
 
@@ -16,14 +17,16 @@ var log = logging.Logger("provider")
 
 // Provider ...
 type Provider struct {
-	host Host
-	msgs <-chan []byte
+	host       Host
+	blockstore blockstore.Blockstore
+	msgs       <-chan []byte
 }
 
 // NewProvider returns a new Provider
-func NewProvider(host Host) *Provider {
+func NewProvider(host Host, bs blockstore.Blockstore) *Provider {
 	return &Provider{
-		host: host,
+		host:       host,
+		blockstore: bs,
 	}
 }
 
@@ -55,7 +58,13 @@ func (p *Provider) handleMessages() {
 
 		log.Info("received query!", query)
 
-		if p.hasData(query.PayloadCID) {
+		has, err := p.hasData(query.PayloadCID)
+		if err != nil {
+			log.Error("failed to check for data in blockstore; error:", err)
+			continue
+		}
+
+		if has {
 			err = p.sendResponse(query)
 			if err != nil {
 				log.Error("cannot send response; error: ", err)
@@ -107,7 +116,6 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	return p.host.Send(context.Background(), addrs[0].ID, bz)
 }
 
-func (p *Provider) hasData(data cid.Cid) bool {
-	// TODO: implement this using actual data store
-	return true
+func (p *Provider) hasData(data cid.Cid) (bool, error) {
+	return p.blockstore.Has(data)
 }

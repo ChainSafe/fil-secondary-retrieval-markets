@@ -15,7 +15,7 @@ $(GOLANGCI):
 		wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s latest; \
 	fi;
 
-lint: $(GOLANGCI) license
+lint: $(GOLANGCI)
 	./bin/golangci-lint run ./... --timeout 5m0s
 
 test:

@@ -5,6 +5,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	logging "github.com/ipfs/go-log/v2"
@@ -62,6 +63,22 @@ func (n *Network) AddrInfo() peer.AddrInfo {
 	}
 }
 
+func (n *Network) MultiAddrs() []string {
+	addrs := n.host.Addrs()
+	multiaddrs := []string{}
+
+	for _, addr := range addrs {
+		multiaddr := fmt.Sprintf("%s/p2p/%s", addr, n.host.ID())
+		multiaddrs = append(multiaddrs, multiaddr)
+	}
+
+	return multiaddrs
+}
+
+func (n *Network) PeerID() peer.ID {
+	return n.host.ID()
+}
+
 // Start begins pubsub by subscribing to the markets topic
 func (n *Network) Start() error {
 	var err error
@@ -96,9 +113,22 @@ func (n *Network) Connect(p peer.AddrInfo) error {
 	return n.host.Connect(ctx, p)
 }
 
+// Send opens a stream and sends data to the given peer
+// TODO: should the protocol ID be passed into this function?
+func (n *Network) Send(ctx context.Context, p peer.ID, data []byte) error {
+	// TODO: check for existing stream
+	s, err := n.host.NewStream(ctx, p, shared.ResponseProtocolID)
+	if err != nil {
+		return err
+	}
+
+	// TODO: add length encoding to msg? or add terminal char?
+	_, err = s.Write(data)
+	return err
+}
+
 // Publish publishes some data
-func (n *Network) Publish(data []byte) error {
-	ctx := context.Background()
+func (n *Network) Publish(ctx context.Context, data []byte) error {
 	return n.topic.Publish(ctx, data)
 }
 

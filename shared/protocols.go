@@ -8,3 +8,4 @@ import (
 )
 
 var RetrievalProtocolID core.ProtocolID = "/fil/secondary-retrieval/0.0.1"
+var ResponseProtocolID core.ProtocolID = "/fil/secondary-retrieval/response/0.0.1"

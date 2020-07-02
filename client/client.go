@@ -30,6 +30,14 @@ func NewClient(net Network) *Client {
 	return c
 }
 
+func (c *Client) Start() error {
+	return c.net.Start()
+}
+
+func (c *Client) Stop() error {
+	return c.net.Stop()
+}
+
 // SubmitQuery encodes a query a submits it to the network to be gossiped
 func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
 	query := shared.Query{

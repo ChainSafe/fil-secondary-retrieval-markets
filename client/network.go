@@ -12,6 +12,9 @@ import (
 
 // Network defines the libp2p network interface used by the client
 type Network interface {
+	Start() error
+	Stop() error
+
 	// Publish broadcasts a message over pub sub on the default topic
 	Publish(ctx context.Context, msg []byte) error
 	// Returns all the hosts multiaddrs

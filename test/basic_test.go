@@ -51,14 +51,16 @@ func (bt *basicTester) handleResponse(resp shared.QueryResponse) {
 }
 
 func TestBasic(t *testing.T) {
-	logging.SetLogLevel("client", "debug")
-	logging.SetLogLevel("provider", "debug")
+	err := logging.SetLogLevel("client", "debug")
+	require.NoError(t, err)
+	err = logging.SetLogLevel("provider", "debug")
+	require.NoError(t, err)
 
 	pnet := newTestNetwork(t)
 	cnet := newTestNetwork(t)
 	bs := newTestBlockstore()
 
-	err := pnet.Connect(cnet.AddrInfo())
+	err = pnet.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
 
 	p := provider.NewProvider(pnet, bs)

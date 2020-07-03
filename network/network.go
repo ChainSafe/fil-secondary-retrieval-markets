@@ -114,7 +114,6 @@ func (n *Network) Connect(p peer.AddrInfo) error {
 }
 
 // Send opens a stream and sends data to the given peer
-// TODO: should the protocol ID be passed into this function?
 func (n *Network) Send(ctx context.Context, protocol core.ProtocolID, p peer.ID, data []byte) error {
 	// TODO: check for existing stream
 	s, err := n.host.NewStream(ctx, p, protocol)
@@ -122,7 +121,11 @@ func (n *Network) Send(ctx context.Context, protocol core.ProtocolID, p peer.ID,
 		return err
 	}
 
-	// TODO: add length encoding to msg? or add terminal char?
+	// TODO: add length encoding to msg
+	_, err = s.Write([]byte{byte(len(data))})
+	if err != nil {
+		return err
+	}
 	_, err = s.Write(data)
 	return err
 }

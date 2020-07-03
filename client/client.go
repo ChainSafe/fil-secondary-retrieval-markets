@@ -6,6 +6,7 @@ package client
 import (
 	"bufio"
 	"context"
+	//"io/ioutil"
 	"reflect"
 	"sync"
 
@@ -66,6 +67,7 @@ func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
 		return err
 	}
 
+	log.Debug("published query")
 	return nil
 }
 
@@ -107,9 +109,17 @@ func (c *Client) unsubscribeAt(sub ClientSubscriber, cid cid.Cid) Unsubscribe {
 // HandleProviderStream reads the first message and calls HandleProviderResponse
 // Note: implements the libp2p StreamHandler interface
 func (c *Client) HandleProviderStream(s network.Stream) {
+	log.Debug("got stream from peer ", s.Conn().RemotePeer())
+
 	// Read message from stream
 	buf := bufio.NewReader(s)
-	bz, err := buf.ReadBytes('\n')
+	msgLen, err := buf.ReadByte()
+	if err != nil {
+		log.Error(err)
+	}
+
+	bz := make([]byte, msgLen)
+	_, err = buf.Read(bz)
 	if err != nil {
 		log.Error(err)
 		return

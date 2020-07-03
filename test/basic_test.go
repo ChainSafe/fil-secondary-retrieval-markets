@@ -13,6 +13,7 @@ import (
 	block "github.com/ipfs/go-block-format"
 	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	logging "github.com/ipfs/go-log/v2"
 	libp2p "github.com/libp2p/go-libp2p"
 
 	"github.com/stretchr/testify/require"
@@ -36,20 +37,23 @@ func newTestBlockstore() blockstore.Blockstore {
 }
 
 type basicTester struct {
-	respCh chan shared.QueryResponse
+	respCh chan *shared.QueryResponse
 }
 
 func newBasicTester() *basicTester {
 	return &basicTester{
-		respCh: make(chan shared.QueryResponse),
+		respCh: make(chan *shared.QueryResponse),
 	}
 }
 
 func (bt *basicTester) handleResponse(resp shared.QueryResponse) {
-	bt.respCh <- resp
+	bt.respCh <- &resp
 }
 
 func TestBasic(t *testing.T) {
+	logging.SetLogLevel("client", "debug")
+	logging.SetLogLevel("provider", "debug")
+
 	pnet := newTestNetwork(t)
 	cnet := newTestNetwork(t)
 	bs := newTestBlockstore()
@@ -107,5 +111,4 @@ func TestBasic(t *testing.T) {
 	case <-time.After(testTimeout):
 		t.Fatal("did not receive response")
 	}
-
 }

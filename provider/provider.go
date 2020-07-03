@@ -56,8 +56,7 @@ func (p *Provider) handleMessages() {
 			continue
 		}
 
-		log.Info("received query!", query)
-
+		log.Debug("received query for CID", query.PayloadCID)
 		has, err := p.hasData(query.PayloadCID)
 		if err != nil {
 			log.Error("failed to check for data in blockstore; error:", err)

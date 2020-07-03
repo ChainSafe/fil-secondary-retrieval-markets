@@ -9,8 +9,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-// Host defines the libp2p host used by the Provider
-type Host interface {
+// Network defines the libp2p network interface used by the Provider
+type Network interface {
 	Start() error
 	Stop() error
 	Messages() <-chan []byte

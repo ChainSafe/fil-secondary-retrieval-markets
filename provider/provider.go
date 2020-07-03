@@ -17,34 +17,34 @@ var log = logging.Logger("provider")
 
 // Provider ...
 type Provider struct {
-	host       Host
+	net        Network
 	blockstore blockstore.Blockstore
 	msgs       <-chan []byte
 }
 
 // NewProvider returns a new Provider
-func NewProvider(host Host, bs blockstore.Blockstore) *Provider {
+func NewProvider(net Network, bs blockstore.Blockstore) *Provider {
 	return &Provider{
-		host:       host,
+		net:        net,
 		blockstore: bs,
 	}
 }
 
 // Start starts the provider
 func (p *Provider) Start() error {
-	err := p.host.Start()
+	err := p.net.Start()
 	if err != nil {
 		return err
 	}
 
-	p.msgs = p.host.Messages()
+	p.msgs = p.net.Messages()
 	go p.handleMessages()
 	return nil
 }
 
 // Stop stops the provider
 func (p *Provider) Stop() error {
-	return p.host.Stop()
+	return p.net.Stop()
 }
 
 func (p *Provider) handleMessages() {
@@ -80,7 +80,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 
 	resp := &shared.QueryResponse{
 		PayloadCID:              query.PayloadCID,
-		Provider:                p.host.PeerID(),
+		Provider:                p.net.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,
 		PaymentIntervalIncrease: 0,
@@ -93,7 +93,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	}
 
 	for i, addr := range addrs {
-		err = p.host.Connect(addr)
+		err = p.net.Connect(addr)
 		if err != nil {
 			log.Error("failed to connect to addr: ", err)
 
@@ -113,7 +113,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 
 	// TODO: if we open up a substream with the client, what protocol ID do we use?
 	// or do we use the existing /fil/markets stream?
-	return p.host.Send(context.Background(), addrs[0].ID, bz)
+	return p.net.Send(context.Background(), addrs[0].ID, bz)
 }
 
 func (p *Provider) hasData(data cid.Cid) (bool, error) {

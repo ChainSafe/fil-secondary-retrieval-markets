@@ -24,20 +24,20 @@ type ClientSubscriber func(resp shared.QueryResponse)
 type Unsubscribe func()
 
 type Client struct {
-	host            Host
+	net             Network
 	subscribersLock *sync.Mutex
 	subscribers     map[cid.Cid][]ClientSubscriber
 }
 
-func NewClient(host Host) *Client {
+func NewClient(net Network) *Client {
 	c := &Client{
-		host:            host,
+		net:             net,
 		subscribersLock: &sync.Mutex{},
 		subscribers:     make(map[cid.Cid][]ClientSubscriber),
 	}
 
 	// Register handler for provider responses
-	c.host.RegisterStreamHandler(shared.RetrievalProtocolID, c.HandleProviderStream)
+	c.net.RegisterStreamHandler(shared.RetrievalProtocolID, c.HandleProviderStream)
 
 	return c
 }
@@ -46,14 +46,14 @@ func NewClient(host Host) *Client {
 func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
 	query := shared.Query{
 		PayloadCID:  cid,
-		ClientAddrs: c.host.MultiAddrs(),
+		ClientAddrs: c.net.MultiAddrs(),
 	}
 	bz, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	err = c.host.Publish(ctx, bz)
+	err = c.net.Publish(ctx, bz)
 	if err != nil {
 		return err
 	}

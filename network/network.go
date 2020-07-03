@@ -7,68 +7,35 @@ import (
 	"context"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
-	ds "github.com/ipfs/go-datastore"
-	"github.com/ipfs/go-datastore/sync"
 	logging "github.com/ipfs/go-log/v2"
-	libp2p "github.com/libp2p/go-libp2p"
 	core "github.com/libp2p/go-libp2p-core"
-	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
 	peer "github.com/libp2p/go-libp2p-core/peer"
-	kaddht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	rhost "github.com/libp2p/go-libp2p/p2p/host/routed"
 )
 
 var log = logging.Logger("network")
 
 // Host wraps a libp2p host. It contains the current pubsub state.
 // Host implements the Network interface
-type Host struct {
+type Network struct {
 	host         host.Host
-	dht          *kaddht.IpfsDHT
 	pubsub       *pubsub.PubSub
 	topic        *pubsub.Topic
 	subscription *pubsub.Subscription
 	msgs         chan []byte
 }
 
-// Config contains the configuration options for the host
-type Config struct {
-	Bootnodes []peer.AddrInfo
-	Identity  crypto.PrivKey
-}
-
-// NewHost returns a Host
-func NewHost(cfg *Config) (*Host, error) {
-	if cfg == nil {
-		return nil, ErrNoConfig
+// NewNetwork returns a Network
+func NewNetwork(h host.Host) (*Network, error) {
+	if h == nil {
+		return nil, ErrNilHost
 	}
 
 	ctx := context.Background()
 
-	hostOpts := []libp2p.Option{}
-
-	if cfg.Identity != nil {
-		hostOpts = append(hostOpts, libp2p.Identity(cfg.Identity))
-	}
-
-	h, err := libp2p.New(ctx, hostOpts...)
-	if err != nil {
-		return nil, err
-	}
-
-	err = bootstrap(ctx, h, cfg.Bootnodes)
-	if err != nil {
-		return nil, err
-	}
-
-	dht := kaddht.NewDHT(ctx, h, sync.MutexWrap(ds.NewMapDatastore()))
-	h = rhost.Wrap(h, dht)
-
 	psOpts := []pubsub.Option{
-		pubsub.WithDirectPeers(cfg.Bootnodes),
 		pubsub.WithFloodPublish(true),
 	}
 
@@ -77,18 +44,17 @@ func NewHost(cfg *Config) (*Host, error) {
 		return nil, err
 	}
 
-	return &Host{
+	return &Network{
 		host:   h,
-		dht:    dht,
 		pubsub: ps,
 		msgs:   make(chan []byte),
 	}, nil
 }
 
 // AddrInfo returns the host's AddrInfo
-func (h *Host) AddrInfo() peer.AddrInfo {
-	maddrs := h.host.Addrs()
-	id := h.host.ID()
+func (n *Network) AddrInfo() peer.AddrInfo {
+	maddrs := n.host.Addrs()
+	id := n.host.ID()
 
 	return peer.AddrInfo{
 		ID:    id,
@@ -97,89 +63,67 @@ func (h *Host) AddrInfo() peer.AddrInfo {
 }
 
 // Start begins pubsub by subscribing to the markets topic
-// TODO: hello protocol
-func (h *Host) Start() error {
+func (n *Network) Start() error {
 	var err error
-	h.topic, err = h.pubsub.Join(string(shared.RetrievalProtocolID))
+	n.topic, err = n.pubsub.Join(string(shared.RetrievalProtocolID))
 	if err != nil {
 		return err
 	}
 
-	h.subscription, err = h.topic.Subscribe()
+	n.subscription, err = n.topic.Subscribe()
 	if err != nil {
 		return err
 	}
 
-	go h.handleMessages()
+	go n.handleMessages()
 	return nil
 }
 
-// Stop cancels all subscriptions and shuts down the host.
-func (h *Host) Stop() error {
-	h.subscription.Cancel()
-	err := h.topic.Close()
-	if err != nil {
-		return err
-	}
-
-	err = h.dht.Close()
-	if err != nil {
-		return err
-	}
-
-	return h.host.Close()
+// Stop cancels all subscriptions
+func (n *Network) Stop() error {
+	n.subscription.Cancel()
+	return n.topic.Close()
 }
 
 // RegisterStreamHandler registers a handler and protocol ID on the libp2p host
-func (h *Host) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {
-	h.host.SetStreamHandler(id, handler)
+func (n *Network) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {
+	n.host.SetStreamHandler(id, handler)
 }
 
 // Connect connects directly to a peer
-func (h *Host) Connect(p peer.AddrInfo) error {
+func (n *Network) Connect(p peer.AddrInfo) error {
 	ctx := context.Background()
-	return h.host.Connect(ctx, p)
+	return n.host.Connect(ctx, p)
 }
 
 // Publish publishes some data
-func (h *Host) Publish(data []byte) error {
+func (n *Network) Publish(data []byte) error {
 	ctx := context.Background()
-	return h.topic.Publish(ctx, data)
+	return n.topic.Publish(ctx, data)
 }
 
 // Messages returns the receive-only pubsub message channel
-func (h *Host) Messages() <-chan []byte {
-	return h.msgs
+func (n *Network) Messages() <-chan []byte {
+	return n.msgs
 }
 
 // handleMessages puts each message received through the host's subscription into the host's msgs channel
-func (h *Host) handleMessages() {
+func (n *Network) handleMessages() {
 	for {
-		msg, err := h.next()
+		msg, err := n.next()
 		if err != nil {
 			log.Warn("failed to get next message from subscription")
 			continue
 		}
 
 		if msg != nil {
-			h.msgs <- msg.Data
+			n.msgs <- msg.Data
 		}
 	}
 }
 
 // next returns the next message in the subscription
-func (h *Host) next() (*pubsub.Message, error) {
+func (n *Network) next() (*pubsub.Message, error) {
 	ctx := context.Background()
-	return h.subscription.Next(ctx)
-}
-
-func bootstrap(ctx context.Context, h host.Host, bns []peer.AddrInfo) error {
-	for _, bn := range bns {
-		err := h.Connect(ctx, bn)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return n.subscription.Next(ctx)
 }

@@ -22,26 +22,26 @@ import (
 
 var testMultiAddr = multiaddr.StringCast("/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 
-type mockHost struct{ queries []shared.Query }
+type mockNetwork struct{ queries []shared.Query }
 
-func (h *mockHost) Publish(ctx context.Context, data []byte) error {
+func (n *mockNetwork) Publish(ctx context.Context, data []byte) error {
 	var query shared.Query
 	err := json.Unmarshal(data, &query)
 	if err != nil {
 		return err
 	}
 
-	h.queries = append(h.queries, query)
+	n.queries = append(n.queries, query)
 	return nil
 }
 
-func (h *mockHost) MultiAddrs() []string {
+func (n *mockNetwork) MultiAddrs() []string {
 	return []string{
 		testMultiAddr.String(),
 	}
 }
 
-func (h *mockHost) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {}
+func (n *mockNetwork) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {}
 
 func TestMain(m *testing.M) {
 	lvl, err := logging.LevelFromString("debug")
@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_SubmitQuery(t *testing.T) {
-	host := &mockHost{queries: []shared.Query{}}
+	host := &mockNetwork{queries: []shared.Query{}}
 	client := NewClient(host)
 
 	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
@@ -71,8 +71,15 @@ func TestClient_SubmitQuery(t *testing.T) {
 	require.ElementsMatch(t, []shared.Query{query}, host.queries)
 }
 
+// <<<<<<< HEAD
+// func TestClient_HandleProviderResponse(t *testing.T) {
+// 	t.Skip("test incomplete")
+
+// 	host := &mockNetwork{queries: []shared.Query{}}
+// =======
 func TestClient_SubscribeToQueryResponses(t *testing.T) {
-	host := &mockHost{queries: []shared.Query{}}
+	host := &mockNetwork{queries: []shared.Query{}}
+	//>>>>>>> 24f218d7819cb6947d51a8115f9b337b9d6a8325
 	client := NewClient(host)
 
 	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")

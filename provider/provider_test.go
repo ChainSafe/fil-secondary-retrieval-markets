@@ -20,43 +20,43 @@ import (
 
 var testMultiAddrStr = "/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N"
 
-type mockHost struct {
+type mockNetwork struct {
 	msgs chan []byte
 	sent []byte
 }
 
-func newMockHost() *mockHost {
-	return &mockHost{
+func newMockNetwork() *mockNetwork {
+	return &mockNetwork{
 		msgs: make(chan []byte),
 	}
 }
 
-func (h *mockHost) Start() error {
+func (n *mockNetwork) Start() error {
 	return nil
 }
 
-func (h *mockHost) Stop() error {
+func (n *mockNetwork) Stop() error {
 	return nil
 }
 
-func (h *mockHost) Messages() <-chan []byte {
-	return h.msgs
+func (n *mockNetwork) Messages() <-chan []byte {
+	return n.msgs
 }
 
-func (h *mockHost) MultiAddrs() []string {
+func (n *mockNetwork) MultiAddrs() []string {
 	return []string{testMultiAddrStr}
 }
 
-func (h *mockHost) Connect(p peer.AddrInfo) error {
+func (n *mockNetwork) Connect(p peer.AddrInfo) error {
 	return nil
 }
 
-func (h *mockHost) Send(ctx context.Context, id peer.ID, msg []byte) error {
-	h.sent = msg
+func (n *mockNetwork) Send(ctx context.Context, id peer.ID, msg []byte) error {
+	n.sent = msg
 	return nil
 }
 
-func (h *mockHost) PeerID() peer.ID {
+func (n *mockNetwork) PeerID() peer.ID {
 	id, err := peer.Decode("QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 	if err != nil {
 		panic(err)
@@ -70,8 +70,8 @@ func newTestBlockstore() blockstore.Blockstore {
 }
 
 func TestProvider(t *testing.T) {
-	h := newMockHost()
-	p := NewProvider(h, newTestBlockstore())
+	n := newMockNetwork()
+	p := NewProvider(n, newTestBlockstore())
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -81,12 +81,12 @@ func TestProvider(t *testing.T) {
 	}()
 
 	msg := []byte("bork")
-	h.msgs <- msg
+	n.msgs <- msg
 }
 
 func TestProvider_Response(t *testing.T) {
-	h := newMockHost()
-	p := NewProvider(h, newTestBlockstore())
+	n := newMockNetwork()
+	p := NewProvider(n, newTestBlockstore())
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -109,11 +109,11 @@ func TestProvider_Response(t *testing.T) {
 	bz, err := query.Marshal()
 	require.NoError(t, err)
 
-	h.msgs <- bz
+	n.msgs <- bz
 
 	resp := &shared.QueryResponse{
 		PayloadCID:              query.PayloadCID,
-		Provider:                h.PeerID(),
+		Provider:                n.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,
 		PaymentIntervalIncrease: 0,
@@ -122,5 +122,5 @@ func TestProvider_Response(t *testing.T) {
 	expected, err := resp.Marshal()
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 10)
-	require.Equal(t, expected, h.sent)
+	require.Equal(t, expected, n.sent)
 }

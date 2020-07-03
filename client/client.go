@@ -42,7 +42,7 @@ func NewClient(net Network) *Client {
 	return c
 }
 
-// SubmitQuery encodes a query a submits it to the network to be gossiped
+// SubmitQuery encodes a query and submits it to the network to be gossiped
 func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
 	query := shared.Query{
 		PayloadCID:  cid,

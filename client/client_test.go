@@ -71,15 +71,8 @@ func TestClient_SubmitQuery(t *testing.T) {
 	require.ElementsMatch(t, []shared.Query{query}, host.queries)
 }
 
-// <<<<<<< HEAD
-// func TestClient_HandleProviderResponse(t *testing.T) {
-// 	t.Skip("test incomplete")
-
-// 	host := &mockNetwork{queries: []shared.Query{}}
-// =======
 func TestClient_SubscribeToQueryResponses(t *testing.T) {
 	host := &mockNetwork{queries: []shared.Query{}}
-	//>>>>>>> 24f218d7819cb6947d51a8115f9b337b9d6a8325
 	client := NewClient(host)
 
 	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")

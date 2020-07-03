@@ -6,7 +6,6 @@ package client
 import (
 	"bufio"
 	"context"
-	//"io/ioutil"
 	"reflect"
 	"sync"
 
@@ -43,10 +42,12 @@ func NewClient(net Network) *Client {
 	return c
 }
 
+// Start starts the client's network
 func (c *Client) Start() error {
 	return c.net.Start()
 }
 
+// Stop stops the client's network
 func (c *Client) Stop() error {
 	return c.net.Stop()
 }
@@ -67,7 +68,6 @@ func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
 		return err
 	}
 
-	log.Debug("published query")
 	return nil
 }
 

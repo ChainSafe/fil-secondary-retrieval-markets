@@ -115,9 +115,9 @@ func (n *Network) Connect(p peer.AddrInfo) error {
 
 // Send opens a stream and sends data to the given peer
 // TODO: should the protocol ID be passed into this function?
-func (n *Network) Send(ctx context.Context, p peer.ID, data []byte) error {
+func (n *Network) Send(ctx context.Context, protocol core.ProtocolID, p peer.ID, data []byte) error {
 	// TODO: check for existing stream
-	s, err := n.host.NewStream(ctx, p, shared.ResponseProtocolID)
+	s, err := n.host.NewStream(ctx, p, protocol)
 	if err != nil {
 		return err
 	}

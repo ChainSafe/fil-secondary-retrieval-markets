@@ -37,7 +37,7 @@ func NewClient(net Network) *Client {
 	}
 
 	// Register handler for provider responses
-	c.net.RegisterStreamHandler(shared.RetrievalProtocolID, c.HandleProviderStream)
+	c.net.RegisterStreamHandler(shared.ResponseProtocolID, c.HandleProviderStream)
 
 	return c
 }
@@ -126,6 +126,8 @@ func (c *Client) HandleProviderResponse(msg []byte) {
 		log.Error(err)
 		return
 	}
+
+	log.Debug("Response received for requested CID: ", response.PayloadCID)
 
 	c.subscribersLock.Lock()
 	defer c.subscribersLock.Unlock()

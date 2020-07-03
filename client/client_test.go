@@ -7,10 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
+	"os"
 	"testing"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log/v2"
 	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -41,6 +43,16 @@ func (h *mockHost) MultiAddrs() []string {
 
 func (h *mockHost) RegisterStreamHandler(id core.ProtocolID, handler network.StreamHandler) {}
 
+func TestMain(m *testing.M) {
+	lvl, err := logging.LevelFromString("debug")
+	if err != nil {
+		panic(err)
+	}
+	logging.SetAllLoggers(lvl)
+
+	os.Exit(m.Run())
+}
+
 func TestClient_SubmitQuery(t *testing.T) {
 	host := &mockHost{queries: []shared.Query{}}
 	client := NewClient(host)
@@ -59,9 +71,7 @@ func TestClient_SubmitQuery(t *testing.T) {
 	require.ElementsMatch(t, []shared.Query{query}, host.queries)
 }
 
-func TestClient_HandleProviderResponse(t *testing.T) {
-	t.Skip("test incomplete")
-
+func TestClient_SubscribeToQueryResponses(t *testing.T) {
 	host := &mockHost{queries: []shared.Query{}}
 	client := NewClient(host)
 
@@ -82,7 +92,54 @@ func TestClient_HandleProviderResponse(t *testing.T) {
 	bz, err := json.Marshal(&response)
 	require.NoError(t, err)
 
+	// First, setup two subscribers
+
+	// Use buffered channel to avoid blocking
+	responsesA := make(chan shared.QueryResponse, 1)
+	responsesB := make(chan shared.QueryResponse, 1)
+
+	subscriberA := func(resp shared.QueryResponse) {
+		responsesA <- resp
+	}
+	subscriberB := func(resp shared.QueryResponse) {
+		responsesB <- resp
+	}
+
+	unsubA := client.SubscribeToQueryResponses(subscriberA, testCid)
+	unsubB := client.SubscribeToQueryResponses(subscriberB, testCid)
+	defer unsubB()
+
+	// Process response and wait for result
 	client.HandleProviderResponse(bz)
 
-	// TODO: Verify message is properly handled
+	select {
+	case actual := <-responsesA:
+		require.Equal(t, response, actual)
+	default:
+		t.Fatal("no response received for subscriberA")
+	}
+
+	select {
+	case actual := <-responsesB:
+		require.Equal(t, response, actual)
+	default:
+		t.Fatal("no response received for subscriberB")
+	}
+
+	// Now lets unsub A and verify no response is received
+	unsubA()
+	client.HandleProviderResponse(bz)
+
+	select {
+	case <-responsesA:
+		t.Fatal("expected no response for subscriberA")
+	default:
+	}
+
+	select {
+	case actual := <-responsesB:
+		require.Equal(t, response, actual)
+	default:
+		t.Fatal("no response received for subscriberB")
+	}
 }

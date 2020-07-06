@@ -13,6 +13,7 @@ import (
 	block "github.com/ipfs/go-block-format"
 	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/stretchr/testify/require"
@@ -51,7 +52,7 @@ func (n *mockNetwork) Connect(p peer.AddrInfo) error {
 	return nil
 }
 
-func (n *mockNetwork) Send(ctx context.Context, id peer.ID, msg []byte) error {
+func (n *mockNetwork) Send(ctx context.Context, protocol core.ProtocolID, id peer.ID, msg []byte) error {
 	n.sent = msg
 	return nil
 }

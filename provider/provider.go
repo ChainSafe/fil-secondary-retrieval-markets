@@ -56,8 +56,7 @@ func (p *Provider) handleMessages() {
 			continue
 		}
 
-		log.Info("received query!", query)
-
+		log.Debug("received query for CID", query.PayloadCID)
 		has, err := p.hasData(query.PayloadCID)
 		if err != nil {
 			log.Error("failed to check for data in blockstore; error:", err)
@@ -93,6 +92,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	}
 
 	for i, addr := range addrs {
+		// TODO: check if already connected using client's peer ID
 		err = p.net.Connect(addr)
 		if err != nil {
 			log.Error("failed to connect to addr: ", err)
@@ -113,7 +113,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 
 	// TODO: if we open up a substream with the client, what protocol ID do we use?
 	// or do we use the existing /fil/markets stream?
-	return p.net.Send(context.Background(), addrs[0].ID, bz)
+	return p.net.Send(context.Background(), shared.ResponseProtocolID, addrs[0].ID, bz)
 }
 
 func (p *Provider) hasData(data cid.Cid) (bool, error) {

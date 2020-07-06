@@ -37,9 +37,19 @@ func NewClient(net Network) *Client {
 	}
 
 	// Register handler for provider responses
-	c.net.RegisterStreamHandler(shared.RetrievalProtocolID, c.HandleProviderStream)
+	c.net.RegisterStreamHandler(shared.ResponseProtocolID, c.HandleProviderStream)
 
 	return c
+}
+
+// Start starts the client's network
+func (c *Client) Start() error {
+	return c.net.Start()
+}
+
+// Stop stops the client's network
+func (c *Client) Stop() error {
+	return c.net.Stop()
 }
 
 // SubmitQuery encodes a query and submits it to the network to be gossiped
@@ -99,11 +109,12 @@ func (c *Client) unsubscribeAt(sub ClientSubscriber, cid cid.Cid) Unsubscribe {
 // HandleProviderStream reads the first message and calls HandleProviderResponse
 // Note: implements the libp2p StreamHandler interface
 func (c *Client) HandleProviderStream(s network.Stream) {
+	log.Debug("got stream from peer ", s.Conn().RemotePeer())
+
 	// Read message from stream
 	buf := bufio.NewReader(s)
 	bz, err := buf.ReadBytes('\n')
 	if err != nil {
-		log.Error(err)
 		return
 	}
 
@@ -118,6 +129,8 @@ func (c *Client) HandleProviderResponse(msg []byte) {
 		log.Error(err)
 		return
 	}
+
+	log.Debug("Response received for requested CID: ", response.PayloadCID)
 
 	c.subscribersLock.Lock()
 	defer c.subscribersLock.Unlock()

@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 
+	core "github.com/libp2p/go-libp2p-core"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -16,6 +17,6 @@ type Network interface {
 	Messages() <-chan []byte
 	MultiAddrs() []string
 	Connect(p peer.AddrInfo) error
-	Send(context.Context, peer.ID, []byte) error
+	Send(context.Context, core.ProtocolID, peer.ID, []byte) error
 	PeerID() peer.ID
 }

@@ -24,6 +24,14 @@ var testMultiAddr = multiaddr.StringCast("/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym
 
 type mockNetwork struct{ queries []shared.Query }
 
+func (n *mockNetwork) Start() error {
+	return nil
+}
+
+func (n *mockNetwork) Stop() error {
+	return nil
+}
+
 func (n *mockNetwork) Publish(ctx context.Context, data []byte) error {
 	var query shared.Query
 	err := json.Unmarshal(data, &query)

@@ -113,15 +113,8 @@ func (c *Client) HandleProviderStream(s network.Stream) {
 
 	// Read message from stream
 	buf := bufio.NewReader(s)
-	msgLen, err := buf.ReadByte()
+	bz, err := buf.ReadBytes('\n')
 	if err != nil {
-		log.Error(err)
-	}
-
-	bz := make([]byte, msgLen)
-	_, err = buf.Read(bz)
-	if err != nil {
-		log.Error(err)
 		return
 	}
 

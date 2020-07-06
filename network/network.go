@@ -121,11 +121,7 @@ func (n *Network) Send(ctx context.Context, protocol core.ProtocolID, p peer.ID,
 		return err
 	}
 
-	// add length encoding to msg
-	_, err = s.Write([]byte{byte(len(data))})
-	if err != nil {
-		return err
-	}
+	data = append(data, '\n')
 	_, err = s.Write(data)
 	return err
 }

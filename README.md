@@ -1,6 +1,6 @@
 # Secondary Filecoin Retrieval Markets
 
-❗**Current development should be considered a work in progress.*
+❗**Current development should be considered a work in progress.**
 
 The aim of this project is to enable secondary retrieval markets in [Filecoin](https://filecoin.io/). 
 

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/cache"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/client"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/network"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/provider"
@@ -66,7 +67,7 @@ func TestBasic(t *testing.T) {
 	err = pnet.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
 
-	p := provider.NewProvider(pnet, bs)
+	p := provider.NewProvider(pnet, bs, cache.NewMockCache(0))
 	c := client.NewClient(cnet)
 
 	// ad data block to blockstore

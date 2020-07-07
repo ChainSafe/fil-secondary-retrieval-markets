@@ -24,7 +24,7 @@ func NewMockCache(size int) *MockCache {
 func (c *MockCache) Put(cid cid.Cid) {
 	if len(c.items) == c.size {
 		// if cache has reached capacity, delete an element
-		for k, _ := range c.items {
+		for k := range c.items {
 			delete(c.items, k)
 			break
 		}
@@ -36,7 +36,7 @@ func (c *MockCache) Put(cid cid.Cid) {
 func (c *MockCache) Get(n int) []cid.Cid {
 	cids := make([]cid.Cid, n)
 	i := 0
-	for k, _ := range c.items {
+	for k := range c.items {
 		cids[i] = k
 		i++
 		if i == n {

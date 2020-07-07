@@ -19,12 +19,12 @@ var log = logging.Logger("provider")
 type Provider struct {
 	net        Network
 	blockstore blockstore.Blockstore
-	cache      Cache
+	cache      RequestCache
 	msgs       <-chan []byte
 }
 
 // NewProvider returns a new Provider
-func NewProvider(net Network, bs blockstore.Blockstore, cache Cache) *Provider {
+func NewProvider(net Network, bs blockstore.Blockstore, cache RequestCache) *Provider {
 	return &Provider{
 		net:        net,
 		blockstore: bs,

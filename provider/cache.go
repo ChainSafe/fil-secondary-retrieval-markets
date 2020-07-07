@@ -7,9 +7,10 @@ import (
 	"github.com/ipfs/go-cid"
 )
 
-type Cache interface {
+// RequestCache si the interface for the provider's cache of requests
+type RequestCache interface {
 	// Put adds the cid to the cache or updates it if it already exists
 	Put(cid.Cid)
-	// Get gets the top n most popular cids
+	// Get gets the top n cids, as determined by the implementation
 	Get(n int) []cid.Cid
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/cache"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	block "github.com/ipfs/go-block-format"
 	ds "github.com/ipfs/go-datastore"
@@ -20,6 +21,7 @@ import (
 )
 
 var testMultiAddrStr = "/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N"
+var testCacheSize = 64
 
 type mockNetwork struct {
 	msgs chan []byte
@@ -72,7 +74,7 @@ func newTestBlockstore() blockstore.Blockstore {
 
 func TestProvider(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore())
+	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -87,7 +89,7 @@ func TestProvider(t *testing.T) {
 
 func TestProvider_Response(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore())
+	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 

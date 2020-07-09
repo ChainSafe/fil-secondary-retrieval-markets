@@ -19,14 +19,16 @@ var log = logging.Logger("provider")
 type Provider struct {
 	net        Network
 	blockstore blockstore.Blockstore
+	cache      RequestCache
 	msgs       <-chan []byte
 }
 
 // NewProvider returns a new Provider
-func NewProvider(net Network, bs blockstore.Blockstore) *Provider {
+func NewProvider(net Network, bs blockstore.Blockstore, cache RequestCache) *Provider {
 	return &Provider{
 		net:        net,
 		blockstore: bs,
+		cache:      cache,
 	}
 }
 
@@ -69,6 +71,8 @@ func (p *Provider) handleMessages() {
 				log.Error("cannot send response; error: ", err)
 			}
 		}
+
+		p.cache.Put(query.PayloadCID)
 	}
 }
 

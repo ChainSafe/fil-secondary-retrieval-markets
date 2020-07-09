@@ -56,3 +56,11 @@ func (c *MockCache) Get(n int) []cid.Cid {
 
 	return cids
 }
+
+func (c *MockCache) Keys() []cid.Cid {
+	return []cid.Cid{}
+}
+
+func (c *MockCache) GetRecord(cid.Cid) *Record {
+	return &Record{}
+}

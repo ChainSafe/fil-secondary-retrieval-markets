@@ -36,14 +36,19 @@ func TestGetRecord(t *testing.T) {
 
 	r0 := c.GetRecord(cid0)
 	require.Equal(t, &Record{
-		Frequency: 1,
+		Frequency:     1,
+		LastAccessed:  c.lastAccessTime[cid0],
+		InsertionTime: c.insertTime[cid0],
 	}, r0)
 
 	c.Put(cid0)
 	r0 = c.GetRecord(cid0)
 	require.Equal(t, &Record{
-		Frequency: 2,
+		Frequency:     2,
+		LastAccessed:  c.lastAccessTime[cid0],
+		InsertionTime: c.insertTime[cid0],
 	}, r0)
+	require.Greater(t, int64(r0.LastAccessed.Sub(r0.InsertionTime)), int64(0))
 }
 
 func TestEvict(t *testing.T) {

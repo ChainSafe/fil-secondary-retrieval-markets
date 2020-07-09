@@ -4,21 +4,27 @@
 package cache
 
 import (
+	"time"
+
 	"github.com/ChainSafe/go-lfu"
 	"github.com/ipfs/go-cid"
 )
 
 // LFUCache is a least frequentry used cache
 type LFUCache struct {
-	cache *lfu.Cache
-	size  int
+	cache          *lfu.Cache
+	size           int
+	insertTime     map[cid.Cid]time.Time
+	lastAccessTime map[cid.Cid]time.Time
 }
 
 // NewLFUCache returns a LFUCache with the given size
 func NewLFUCache(size int) *LFUCache {
 	return &LFUCache{
-		cache: lfu.New(),
-		size:  size,
+		cache:          lfu.New(),
+		size:           size,
+		insertTime:     make(map[cid.Cid]time.Time),
+		lastAccessTime: make(map[cid.Cid]time.Time),
 	}
 }
 
@@ -30,6 +36,10 @@ func (c *LFUCache) Put(cid cid.Cid) {
 	}
 
 	c.cache.Set(cid.String(), cid)
+	c.lastAccessTime[cid] = time.Now()
+	if !has {
+		c.insertTime[cid] = time.Now()
+	}
 }
 
 // Keys returns all the cids in the cache
@@ -52,7 +62,9 @@ func (c *LFUCache) Keys() []cid.Cid {
 func (c *LFUCache) GetRecord(cid cid.Cid) *Record {
 	freq := c.cache.GetFrequency(cid.String())
 	r := &Record{
-		Frequency: freq,
+		Frequency:     freq,
+		LastAccessed:  c.lastAccessTime[cid],
+		InsertionTime: c.insertTime[cid],
 	}
 	return r
 }

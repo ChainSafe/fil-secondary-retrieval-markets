@@ -11,20 +11,24 @@ import (
 // LFUCache is a least frequentry used cache
 type LFUCache struct {
 	cache *lfu.Cache
+	size  int
 }
 
 // NewLFUCache returns a LFUCache with the given size
 func NewLFUCache(size int) *LFUCache {
-	cache := lfu.New()
-	cache.UpperBound = size
-	cache.LowerBound = size
 	return &LFUCache{
-		cache: cache,
+		cache: lfu.New(),
+		size:  size,
 	}
 }
 
 // Put adds a cid to the cache
 func (c *LFUCache) Put(cid cid.Cid) {
+	has := c.cache.Has(cid.String())
+	if !has && c.cache.Len() == c.size {
+		c.cache.Evict(1)
+	}
+
 	c.cache.Set(cid.String(), cid)
 }
 

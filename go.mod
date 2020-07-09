@@ -3,7 +3,7 @@ module github.com/ChainSafe/fil-secondary-retrieval-markets
 go 1.14
 
 require (
-	github.com/ChainSafe/go-lfu v0.0.0-20200709213732-40645cfa6b0c
+	github.com/ChainSafe/go-lfu v0.0.0-20200709222421-81e9638081bd
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.6
 	github.com/ipfs/go-datastore v0.4.4

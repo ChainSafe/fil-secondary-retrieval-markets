@@ -10,7 +10,7 @@ import (
 	"github.com/ipfs/go-cid"
 )
 
-// LFUCache is a least frequentry used cache
+// LFUCache is a least frequently used cache
 type LFUCache struct {
 	cache          *lfu.Cache
 	size           int

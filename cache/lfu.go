@@ -4,6 +4,7 @@
 package cache
 
 import (
+	"sync"
 	"time"
 
 	"github.com/ChainSafe/go-lfu"
@@ -16,6 +17,7 @@ type LFUCache struct {
 	size           int
 	insertTime     map[cid.Cid]time.Time
 	lastAccessTime map[cid.Cid]time.Time
+	cacheMu        sync.Mutex
 }
 
 // NewLFUCache returns a LFUCache with the given size
@@ -36,6 +38,9 @@ func (c *LFUCache) Put(cid cid.Cid) {
 	}
 
 	c.cache.Set(cid.String(), cid)
+
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
 	c.lastAccessTime[cid] = time.Now()
 	if !has {
 		c.insertTime[cid] = time.Now()
@@ -60,6 +65,9 @@ func (c *LFUCache) Keys() []cid.Cid {
 
 // GetRecord returns the Record for the given cid
 func (c *LFUCache) GetRecord(cid cid.Cid) *Record {
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
+
 	freq := c.cache.GetFrequency(cid.String())
 	r := &Record{
 		Frequency:     freq,

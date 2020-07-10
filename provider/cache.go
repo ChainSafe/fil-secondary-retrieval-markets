@@ -9,7 +9,7 @@ import (
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/cache"
 )
 
-// RequestCache si the interface for the provider's cache of requests
+// RequestCache is the interface for the provider's cache of requests
 type RequestCache interface {
 	// Put adds the cid to the cache or updates it if it already exists
 	Put(cid.Cid)

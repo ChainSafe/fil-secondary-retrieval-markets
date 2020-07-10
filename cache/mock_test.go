@@ -22,15 +22,9 @@ func TestMockCache(t *testing.T) {
 	c.Put(cid0)
 	c.Put(cid1)
 
-	res := c.Get(2)
+	res := c.Keys()
 	sort.Slice(res, func(i, j int) bool {
 		return res[i].String() < res[j].String()
 	})
 	require.Equal(t, []cid.Cid{cid1, cid0}, res)
-
-	res = c.Get(3)
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].String() < res[j].String()
-	})
-	require.Equal(t, []cid.Cid{cid1, cid0, cid.Cid{}}, res)
 }

@@ -39,20 +39,16 @@ func (c *MockCache) Put(cid cid.Cid) {
 	c.items[cid] = struct{}{}
 }
 
-func (c *MockCache) Get(n int) []cid.Cid {
-	c.itemsMu.Lock()
-	defer c.itemsMu.Unlock()
-
-	cids := make([]cid.Cid, n)
+func (c *MockCache) Keys() []cid.Cid {
+	keys := make([]cid.Cid, len(c.items))
 	i := 0
-
 	for k := range c.items {
-		cids[i] = k
+		keys[i] = k
 		i++
-		if i == n {
-			break
-		}
 	}
+	return keys
+}
 
-	return cids
+func (c *MockCache) GetRecord(cid.Cid) *Record {
+	return &Record{}
 }

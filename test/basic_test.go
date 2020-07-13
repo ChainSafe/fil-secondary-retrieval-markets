@@ -15,6 +15,7 @@ import (
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/provider"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	block "github.com/ipfs/go-block-format"
+	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	logging "github.com/ipfs/go-log/v2"
@@ -70,7 +71,7 @@ func TestBasic(t *testing.T) {
 	p := provider.NewProvider(pnet, bs, cache.NewMockCache(0))
 	c := client.NewClient(cnet)
 
-	// ad data block to blockstore
+	// add data block to blockstore
 	b := block.NewBlock([]byte("noot"))
 	testCid := b.Cid()
 	err = bs.Put(b)
@@ -116,5 +117,107 @@ func TestBasic(t *testing.T) {
 		require.Equal(t, expected, resp)
 	case <-time.After(testTimeout):
 		t.Fatal("did not receive response")
+	}
+}
+
+func TestMulti(t *testing.T) {
+	err := logging.SetLogLevel("client", "debug")
+	require.NoError(t, err)
+	err = logging.SetLogLevel("provider", "debug")
+	require.NoError(t, err)
+
+	numClients := 3
+	numProviders := 3
+	data := [][]byte{
+		[]byte("noot"),
+		[]byte("was"),
+		[]byte("here"),
+	}
+	cids := make([]cid.Cid, len(data))
+
+	clients := make([]*client.Client, numClients)
+	providers := make([]*provider.Provider, numProviders)
+	blockstores := make([]blockstore.Blockstore, numProviders)
+	cnets := make([]*network.Network, numClients)
+	pnets := make([]*network.Network, numProviders)
+
+	// create and start clients
+	for i := 0; i < numClients; i++ {
+		net := newTestNetwork(t)
+		c := client.NewClient(net)
+
+		err = c.Start()
+		require.NoError(t, err)
+		defer func() {
+			err = c.Stop()
+			require.NoError(t, err)
+		}()
+
+		clients[i] = c
+		cnets[i] = net
+	}
+
+	// create and start providers
+	for i := 0; i < numProviders; i++ {
+		net := newTestNetwork(t)
+		bs := newTestBlockstore()
+		p := provider.NewProvider(net, bs, cache.NewMockCache(0))
+
+		err = p.Start()
+		require.NoError(t, err)
+		defer func() {
+			err = p.Stop()
+			require.NoError(t, err)
+		}()
+
+		providers[i] = p
+		blockstores[i] = bs
+		pnets[i] = net
+	}
+
+	// connect clients to providers
+	for _, cnet := range cnets {
+		for _, pnet := range pnets {
+			err := pnet.Connect(cnet.AddrInfo())
+			require.NoError(t, err)
+		}
+	}
+
+	// add data to blockstores
+	for i, bs := range blockstores {
+		// add data block to blockstore
+		b := block.NewBlock(data[i])
+		cids[i] = b.Cid()
+		err = bs.Put(b)
+		require.NoError(t, err)
+	}
+
+	// each client queries for a different cid
+	for i, c := range clients {
+		// subscribe to responses
+		bt := newBasicTester()
+		unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, cids[i])
+		defer unsubscribe()
+
+		// submit query
+		err = c.SubmitQuery(context.Background(), cids[i])
+		require.NoError(t, err)
+
+		// assert response was received
+		expected := &shared.QueryResponse{
+			PayloadCID:              cids[i],
+			Provider:                pnets[i].PeerID(),
+			Total:                   big.NewInt(0),
+			PaymentInterval:         0,
+			PaymentIntervalIncrease: 0,
+		}
+
+		select {
+		case resp := <-bt.respCh:
+			require.NotNil(t, resp)
+			require.Equal(t, expected, resp)
+		case <-time.After(testTimeout):
+			t.Fatal("did not receive response")
+		}
 	}
 }

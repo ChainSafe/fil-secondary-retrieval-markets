@@ -78,7 +78,11 @@ func run(ctx *cli.Context) error {
 	unsubscribe := c.SubscribeToQueryResponses(h.handleResponse, cid)
 	defer unsubscribe()
 
-	c.SubmitQuery(context.Background(), cid)
+	err = c.SubmitQuery(context.Background(), cid)
+	if err != nil {
+		return err
+	}
+
 	log.Info("submit query", cid)
 
 	for resp := range h.respCh {

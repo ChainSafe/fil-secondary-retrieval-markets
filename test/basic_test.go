@@ -6,6 +6,7 @@ package test
 import (
 	"context"
 	"math/big"
+	"sort"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	logging "github.com/ipfs/go-log/v2"
 	libp2p "github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/stretchr/testify/require"
 )
@@ -220,4 +222,98 @@ func TestMulti(t *testing.T) {
 			t.Fatal("did not receive response")
 		}
 	}
+}
+
+func TestMultiProvider(t *testing.T) {
+	err := logging.SetLogLevel("client", "debug")
+	require.NoError(t, err)
+	err = logging.SetLogLevel("provider", "debug")
+	require.NoError(t, err)
+
+	pnet0 := newTestNetwork(t)
+	pnet1 := newTestNetwork(t)
+	cnet := newTestNetwork(t)
+	bs0 := newTestBlockstore()
+	bs1 := newTestBlockstore()
+
+	err = pnet0.Connect(cnet.AddrInfo())
+	require.NoError(t, err)
+	err = pnet1.Connect(cnet.AddrInfo())
+	require.NoError(t, err)
+
+	p0 := provider.NewProvider(pnet0, bs0, cache.NewMockCache(0))
+	p1 := provider.NewProvider(pnet1, bs1, cache.NewMockCache(0))
+	c := client.NewClient(cnet)
+
+	// add data to both providers's blockstores
+	b := block.NewBlock([]byte("noot"))
+	testCid := b.Cid()
+	err = bs0.Put(b)
+	require.NoError(t, err)
+	err = bs1.Put(b)
+	require.NoError(t, err)
+
+	// start providers and client
+	err = p0.Start()
+	require.NoError(t, err)
+	defer func() {
+		err = p0.Stop()
+		require.NoError(t, err)
+	}()
+
+	err = p1.Start()
+	require.NoError(t, err)
+	defer func() {
+		err = p1.Stop()
+		require.NoError(t, err)
+	}()
+
+	err = c.Start()
+	require.NoError(t, err)
+	defer func() {
+		err = c.Stop()
+		require.NoError(t, err)
+	}()
+
+	// query for CID, should receive responses from both providers
+	bt := newBasicTester()
+	unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, testCid)
+	defer unsubscribe()
+
+	// submit query
+	err = c.SubmitQuery(context.Background(), testCid)
+	require.NoError(t, err)
+
+	// assert response was received
+	expected := &shared.QueryResponse{
+		PayloadCID:              testCid,
+		Total:                   big.NewInt(0),
+		PaymentInterval:         0,
+		PaymentIntervalIncrease: 0,
+	}
+
+	receviedFrom := []peer.ID{}
+
+	for i := 0; i < 2; i++ {
+		select {
+		case resp := <-bt.respCh:
+			require.NotNil(t, resp)
+			respProvider := resp.Provider
+			resp.Provider = ""
+			require.Equal(t, expected, resp)
+			receviedFrom = append(receviedFrom, respProvider)
+		case <-time.After(testTimeout):
+			t.Fatal("did not receive response")
+		}
+	}
+
+	// assert response was received from providers 0 and 1
+	expectedResponders := []peer.ID{pnet0.PeerID(), pnet1.PeerID()}
+	sort.Slice(expectedResponders, func(i, j int) bool {
+		return expectedResponders[i].String() < expectedResponders[j].String()
+	})
+	sort.Slice(receviedFrom, func(i, j int) bool {
+		return receviedFrom[i].String() < receviedFrom[j].String()
+	})
+	require.Equal(t, expectedResponders, receviedFrom)
 }

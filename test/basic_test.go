@@ -240,6 +240,8 @@ func TestMultiProvider(t *testing.T) {
 	require.NoError(t, err)
 	err = pnet1.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
+	err = pnet1.Connect(pnet0.AddrInfo())
+	require.NoError(t, err)
 
 	p0 := provider.NewProvider(pnet0, bs0, cache.NewMockCache(0))
 	p1 := provider.NewProvider(pnet1, bs1, cache.NewMockCache(0))

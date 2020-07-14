@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testTimeout = time.Second * 5
+var testTimeout = time.Second * 10
 
 func newTestNetwork(t *testing.T) *network.Network {
 	ctx := context.Background()

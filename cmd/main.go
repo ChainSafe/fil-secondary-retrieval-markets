@@ -97,8 +97,6 @@ func run(ctx *cli.Context) error {
 			return nil
 		}
 	}
-
-	return nil
 }
 
 func newNetwork() (*network.Network, error) {

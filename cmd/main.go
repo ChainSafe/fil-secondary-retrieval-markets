@@ -111,4 +111,3 @@ func newNetwork() (*network.Network, error) {
 	// TODO: bootstrap to network
 	return network.NewNetwork(h)
 }
-

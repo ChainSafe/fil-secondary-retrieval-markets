@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/client"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/network"
@@ -29,6 +30,8 @@ var (
 	}
 
 	app = cli.NewApp()
+
+	responseTimeout = time.Minute
 )
 
 func init() {
@@ -83,10 +86,16 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
-	log.Info("submit query", cid)
+	log.Info("submit query ", cid)
 
-	for resp := range h.respCh {
-		log.Info("got response!", resp)
+	for {
+		select {
+		case resp := <-h.respCh:
+			log.Info("got response! ", resp)
+		case <-time.After(responseTimeout):
+			log.Info("no responses received by timeout")
+			return nil
+		}
 	}
 
 	return nil

@@ -303,6 +303,7 @@ func TestMultiProvider(t *testing.T) {
 			respProvider := resp.Provider
 			resp.Provider = ""
 			require.Equal(t, expected, resp)
+			t.Log("received from", respProvider)
 			receviedFrom = append(receviedFrom, respProvider)
 		case <-time.After(testTimeout):
 			t.Fatal("did not receive response")

@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testTimeout = time.Second * 10
+var testTimeout = time.Second * 15
 
 func newTestNetwork(t *testing.T) *network.Network {
 	ctx := context.Background()
@@ -243,7 +243,7 @@ func TestMultiProvider(t *testing.T) {
 	err = pnet1.Connect(pnet0.AddrInfo())
 	require.NoError(t, err)
 
-	time.Sleep(time.Second*30)
+	time.Sleep(time.Second * 30)
 
 	p0 := provider.NewProvider(pnet0, bs0, cache.NewMockCache(0))
 	p1 := provider.NewProvider(pnet1, bs1, cache.NewMockCache(0))

@@ -15,4 +15,5 @@ require (
 	github.com/libp2p/go-libp2p-pubsub v0.3.1
 	github.com/multiformats/go-multiaddr v0.2.2
 	github.com/stretchr/testify v1.6.1
+	github.com/urfave/cli v1.22.4
 )

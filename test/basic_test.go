@@ -73,6 +73,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestBasic(t *testing.T) {
+	t.Skip()
 	pnet, phost := newTestNetwork(t)
 	cnet, chost := newTestNetwork(t)
 	bs := newTestBlockstore()
@@ -135,7 +136,6 @@ func TestBasic(t *testing.T) {
 }
 
 func TestMulti(t *testing.T) {
-	t.Skip()
 	numClients := 3
 	numProviders := 3
 	data := [][]byte{

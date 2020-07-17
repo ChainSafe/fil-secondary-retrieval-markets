@@ -10,10 +10,8 @@ import (
 	"time"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/client"
-	"github.com/ChainSafe/fil-secondary-retrieval-markets/network"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
-	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/urfave/cli"
 )
 
@@ -24,9 +22,14 @@ var (
 		Name:  "query",
 		Usage: "submit query for a CID",
 	}
+	bootnodesFlag = cli.StringFlag{
+		Name:  "bootnodes",
+		Usage: "comma-separated list of peer addresses",
+	}
 
 	flags = []cli.Flag{
 		queryFlag,
+		bootnodesFlag,
 	}
 
 	app = cli.NewApp()
@@ -53,8 +56,9 @@ func run(ctx *cli.Context) error {
 	}
 
 	cidStr := ctx.String(queryFlag.Name)
+	bootnodesStr := ctx.String(bootnodesFlag.Name)
 
-	n, err := newNetwork()
+	n, err := newNetwork(bootnodesStr)
 	if err != nil {
 		return err
 	}
@@ -97,15 +101,4 @@ func run(ctx *cli.Context) error {
 			return nil
 		}
 	}
-}
-
-func newNetwork() (*network.Network, error) {
-	ctx := context.Background()
-	h, err := libp2p.New(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: bootstrap to network
-	return network.NewNetwork(h)
 }

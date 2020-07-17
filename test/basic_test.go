@@ -73,7 +73,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestBasic(t *testing.T) {
-	t.Skip()
 	pnet, phost := newTestNetwork(t)
 	cnet, chost := newTestNetwork(t)
 	bs := newTestBlockstore()
@@ -305,7 +304,7 @@ func TestMultiProvider(t *testing.T) {
 		PaymentIntervalIncrease: 0,
 	}
 
-	receviedFrom := []peer.ID{}
+	receivedFrom := []peer.ID{}
 
 	for i := 0; i < 2; i++ {
 		select {
@@ -315,7 +314,7 @@ func TestMultiProvider(t *testing.T) {
 			resp.Provider = ""
 			require.Equal(t, expected, resp)
 			t.Log("received from", respProvider)
-			receviedFrom = append(receviedFrom, respProvider)
+			receivedFrom = append(receivedFrom, respProvider)
 		case <-time.After(testTimeout):
 			t.Fatal("did not receive response")
 		}
@@ -326,8 +325,8 @@ func TestMultiProvider(t *testing.T) {
 	sort.Slice(expectedResponders, func(i, j int) bool {
 		return expectedResponders[i].String() < expectedResponders[j].String()
 	})
-	sort.Slice(receviedFrom, func(i, j int) bool {
-		return receviedFrom[i].String() < receviedFrom[j].String()
+	sort.Slice(receivedFrom, func(i, j int) bool {
+		return receivedFrom[i].String() < receivedFrom[j].String()
 	})
-	require.Equal(t, expectedResponders, receviedFrom)
+	require.Equal(t, expectedResponders, receivedFrom)
 }

@@ -79,6 +79,10 @@ func (n *Network) PeerID() peer.ID {
 	return n.host.ID()
 }
 
+func (n *Network) Peers() []peer.ID {
+	return n.host.Peerstore().Peers()
+}
+
 // Start begins pubsub by subscribing to the markets topic
 func (n *Network) Start() error {
 	var err error

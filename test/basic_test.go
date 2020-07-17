@@ -22,7 +22,6 @@ import (
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	logging "github.com/ipfs/go-log/v2"
 	libp2p "github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 
 	"github.com/stretchr/testify/require"
@@ -30,14 +29,19 @@ import (
 
 var testTimeout = time.Second * 30
 
-func newTestNetwork(t *testing.T) (*network.Network, host.Host) {
+func newTestNetwork(t *testing.T) (*network.Network, func()) {
 	ctx := context.Background()
 	h, err := libp2p.New(ctx)
 	require.NoError(t, err)
 
 	net, err := network.NewNetwork(h)
 	require.NoError(t, err)
-	return net, h
+
+	stop := func() {
+		require.NoError(t, net.Stop())
+		require.NoError(t, h.Close())
+	}
+	return net, stop
 }
 
 func newTestBlockstore() blockstore.Blockstore {
@@ -73,8 +77,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestBasic(t *testing.T) {
-	pnet, phost := newTestNetwork(t)
-	cnet, chost := newTestNetwork(t)
+	pnet, pnetStop := newTestNetwork(t)
+	cnet, cnetStop := newTestNetwork(t)
 	bs := newTestBlockstore()
 
 	err := pnet.Connect(cnet.AddrInfo())
@@ -92,20 +96,12 @@ func TestBasic(t *testing.T) {
 	// start provider
 	err = p.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = p.Stop()
-		require.NoError(t, err)
-		require.NoError(t, phost.Close())
-	}()
+	defer pnetStop()
 
 	// start client
 	err = c.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = c.Stop()
-		require.NoError(t, err)
-		require.NoError(t, chost.Close())
-	}()
+	defer cnetStop()
 
 	// subscribe to responses
 	bt := newBasicTester()
@@ -152,16 +148,12 @@ func TestMulti(t *testing.T) {
 
 	// create and start clients
 	for i := 0; i < numClients; i++ {
-		net, h := newTestNetwork(t)
+		net, stop := newTestNetwork(t)
 		c := client.NewClient(net)
 
 		err := c.Start()
 		require.NoError(t, err)
-		defer func() {
-			err = c.Stop()
-			require.NoError(t, err)
-			require.NoError(t, h.Close())
-		}()
+		defer stop()
 
 		clients[i] = c
 		cnets[i] = net
@@ -169,17 +161,13 @@ func TestMulti(t *testing.T) {
 
 	// create and start providers
 	for i := 0; i < numProviders; i++ {
-		net, h := newTestNetwork(t)
+		net, stop := newTestNetwork(t)
 		bs := newTestBlockstore()
 		p := provider.NewProvider(net, bs, cache.NewMockCache(0))
 
 		err := p.Start()
 		require.NoError(t, err)
-		defer func() {
-			err = p.Stop()
-			require.NoError(t, err)
-			require.NoError(t, h.Close())
-		}()
+		defer stop()
 
 		providers[i] = p
 		blockstores[i] = bs
@@ -234,9 +222,9 @@ func TestMulti(t *testing.T) {
 }
 
 func TestMultiProvider(t *testing.T) {
-	pnet0, p0h := newTestNetwork(t)
-	pnet1, p1h := newTestNetwork(t)
-	cnet, ch := newTestNetwork(t)
+	pnet0, p0Stop := newTestNetwork(t)
+	pnet1, p1Stop := newTestNetwork(t)
+	cnet, cStop := newTestNetwork(t)
 	bs0 := newTestBlockstore()
 	bs1 := newTestBlockstore()
 
@@ -264,27 +252,15 @@ func TestMultiProvider(t *testing.T) {
 	// start providers and client
 	err = p0.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = p0.Stop()
-		require.NoError(t, err)
-		require.NoError(t, p0h.Close())
-	}()
+	defer p0Stop()
 
 	err = p1.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = p1.Stop()
-		require.NoError(t, err)
-		require.NoError(t, p1h.Close())
-	}()
+	defer p1Stop()
 
 	err = c.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = c.Stop()
-		require.NoError(t, err)
-		require.NoError(t, ch.Close())
-	}()
+	defer cStop()
 
 	// query for CID, should receive responses from both providers
 	bt := newBasicTester()

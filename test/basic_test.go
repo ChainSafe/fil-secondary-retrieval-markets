@@ -29,7 +29,7 @@ import (
 
 var testTimeout = time.Second * 30
 
-func newTestNetwork(t *testing.T) (*network.Network, func()) {
+func newTestNetwork(t *testing.T) *network.Network {
 	ctx := context.Background()
 	h, err := libp2p.New(ctx)
 	require.NoError(t, err)
@@ -37,11 +37,11 @@ func newTestNetwork(t *testing.T) (*network.Network, func()) {
 	net, err := network.NewNetwork(h)
 	require.NoError(t, err)
 
-	stop := func() {
+	t.Cleanup(func() {
 		require.NoError(t, net.Stop())
 		require.NoError(t, h.Close())
-	}
-	return net, stop
+	})
+	return net
 }
 
 func newTestBlockstore() blockstore.Blockstore {
@@ -77,8 +77,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestBasic(t *testing.T) {
-	pnet, pnetStop := newTestNetwork(t)
-	cnet, cnetStop := newTestNetwork(t)
+	pnet := newTestNetwork(t)
+	cnet := newTestNetwork(t)
 	bs := newTestBlockstore()
 
 	err := pnet.Connect(cnet.AddrInfo())
@@ -96,12 +96,10 @@ func TestBasic(t *testing.T) {
 	// start provider
 	err = p.Start()
 	require.NoError(t, err)
-	defer pnetStop()
 
 	// start client
 	err = c.Start()
 	require.NoError(t, err)
-	defer cnetStop()
 
 	// subscribe to responses
 	bt := newBasicTester()
@@ -148,12 +146,11 @@ func TestMulti(t *testing.T) {
 
 	// create and start clients
 	for i := 0; i < numClients; i++ {
-		net, stop := newTestNetwork(t)
+		net := newTestNetwork(t)
 		c := client.NewClient(net)
 
 		err := c.Start()
 		require.NoError(t, err)
-		defer stop()
 
 		clients[i] = c
 		cnets[i] = net
@@ -161,13 +158,12 @@ func TestMulti(t *testing.T) {
 
 	// create and start providers
 	for i := 0; i < numProviders; i++ {
-		net, stop := newTestNetwork(t)
+		net := newTestNetwork(t)
 		bs := newTestBlockstore()
 		p := provider.NewProvider(net, bs, cache.NewMockCache(0))
 
 		err := p.Start()
 		require.NoError(t, err)
-		defer stop()
 
 		providers[i] = p
 		blockstores[i] = bs
@@ -222,9 +218,9 @@ func TestMulti(t *testing.T) {
 }
 
 func TestMultiProvider(t *testing.T) {
-	pnet0, p0Stop := newTestNetwork(t)
-	pnet1, p1Stop := newTestNetwork(t)
-	cnet, cStop := newTestNetwork(t)
+	pnet0 := newTestNetwork(t)
+	pnet1 := newTestNetwork(t)
+	cnet := newTestNetwork(t)
 	bs0 := newTestBlockstore()
 	bs1 := newTestBlockstore()
 
@@ -252,15 +248,12 @@ func TestMultiProvider(t *testing.T) {
 	// start providers and client
 	err = p0.Start()
 	require.NoError(t, err)
-	defer p0Stop()
 
 	err = p1.Start()
 	require.NoError(t, err)
-	defer p1Stop()
 
 	err = c.Start()
 	require.NoError(t, err)
-	defer cStop()
 
 	// query for CID, should receive responses from both providers
 	bt := newBasicTester()

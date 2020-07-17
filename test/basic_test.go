@@ -6,6 +6,7 @@ package test
 import (
 	"context"
 	"math/big"
+	"os"
 	"sort"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testTimeout = time.Second * 15
+var testTimeout = time.Second * 30
 
 func newTestNetwork(t *testing.T) *network.Network {
 	ctx := context.Background()
@@ -57,17 +58,25 @@ func (bt *basicTester) handleResponse(resp shared.QueryResponse) {
 	bt.respCh <- &resp
 }
 
-func TestBasic(t *testing.T) {
+func TestMain(m *testing.M) {
 	err := logging.SetLogLevel("client", "debug")
-	require.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 	err = logging.SetLogLevel("provider", "debug")
-	require.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 
+	os.Exit(m.Run())
+}
+
+func TestBasic(t *testing.T) {
 	pnet := newTestNetwork(t)
 	cnet := newTestNetwork(t)
 	bs := newTestBlockstore()
 
-	err = pnet.Connect(cnet.AddrInfo())
+	err := pnet.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
 
 	p := provider.NewProvider(pnet, bs, cache.NewMockCache(0))
@@ -123,11 +132,6 @@ func TestBasic(t *testing.T) {
 }
 
 func TestMulti(t *testing.T) {
-	err := logging.SetLogLevel("client", "debug")
-	require.NoError(t, err)
-	err = logging.SetLogLevel("provider", "debug")
-	require.NoError(t, err)
-
 	numClients := 3
 	numProviders := 3
 	data := [][]byte{
@@ -148,7 +152,7 @@ func TestMulti(t *testing.T) {
 		net := newTestNetwork(t)
 		c := client.NewClient(net)
 
-		err = c.Start()
+		err := c.Start()
 		require.NoError(t, err)
 		defer func() {
 			err = c.Stop()
@@ -165,7 +169,7 @@ func TestMulti(t *testing.T) {
 		bs := newTestBlockstore()
 		p := provider.NewProvider(net, bs, cache.NewMockCache(0))
 
-		err = p.Start()
+		err := p.Start()
 		require.NoError(t, err)
 		defer func() {
 			err = p.Stop()
@@ -190,7 +194,7 @@ func TestMulti(t *testing.T) {
 		// add data block to blockstore
 		b := block.NewBlock(data[i])
 		cids[i] = b.Cid()
-		err = bs.Put(b)
+		err := bs.Put(b)
 		require.NoError(t, err)
 	}
 
@@ -202,7 +206,7 @@ func TestMulti(t *testing.T) {
 		defer unsubscribe()
 
 		// submit query
-		err = c.SubmitQuery(context.Background(), cids[i])
+		err := c.SubmitQuery(context.Background(), cids[i])
 		require.NoError(t, err)
 
 		// assert response was received
@@ -225,18 +229,13 @@ func TestMulti(t *testing.T) {
 }
 
 func TestMultiProvider(t *testing.T) {
-	err := logging.SetLogLevel("client", "debug")
-	require.NoError(t, err)
-	err = logging.SetLogLevel("provider", "debug")
-	require.NoError(t, err)
-
 	pnet0 := newTestNetwork(t)
 	pnet1 := newTestNetwork(t)
 	cnet := newTestNetwork(t)
 	bs0 := newTestBlockstore()
 	bs1 := newTestBlockstore()
 
-	err = pnet0.Connect(cnet.AddrInfo())
+	err := pnet0.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
 	err = pnet1.Connect(cnet.AddrInfo())
 	require.NoError(t, err)

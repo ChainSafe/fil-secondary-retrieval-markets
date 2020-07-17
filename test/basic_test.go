@@ -6,6 +6,7 @@ package test
 import (
 	"context"
 	"math/big"
+	"os"
 	"sort"
 	"testing"
 	"time"
@@ -26,16 +27,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testTimeout = time.Second * 15
+var testTimeout = time.Second * 30
 
-func newTestNetwork(t *testing.T) *network.Network {
+func newTestNetwork(t *testing.T) (*network.Network, func()) {
 	ctx := context.Background()
 	h, err := libp2p.New(ctx)
 	require.NoError(t, err)
 
 	net, err := network.NewNetwork(h)
 	require.NoError(t, err)
-	return net
+
+	stop := func() {
+		require.NoError(t, net.Stop())
+		require.NoError(t, h.Close())
+	}
+	return net, stop
 }
 
 func newTestBlockstore() blockstore.Blockstore {
@@ -57,17 +63,25 @@ func (bt *basicTester) handleResponse(resp shared.QueryResponse) {
 	bt.respCh <- &resp
 }
 
-func TestBasic(t *testing.T) {
+func TestMain(m *testing.M) {
 	err := logging.SetLogLevel("client", "debug")
-	require.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 	err = logging.SetLogLevel("provider", "debug")
-	require.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 
-	pnet := newTestNetwork(t)
-	cnet := newTestNetwork(t)
+	os.Exit(m.Run())
+}
+
+func TestBasic(t *testing.T) {
+	pnet, pnetStop := newTestNetwork(t)
+	cnet, cnetStop := newTestNetwork(t)
 	bs := newTestBlockstore()
 
-	err = pnet.Connect(cnet.AddrInfo())
+	err := pnet.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
 
 	p := provider.NewProvider(pnet, bs, cache.NewMockCache(0))
@@ -82,18 +96,12 @@ func TestBasic(t *testing.T) {
 	// start provider
 	err = p.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = p.Stop()
-		require.NoError(t, err)
-	}()
+	defer pnetStop()
 
 	// start client
 	err = c.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = c.Stop()
-		require.NoError(t, err)
-	}()
+	defer cnetStop()
 
 	// subscribe to responses
 	bt := newBasicTester()
@@ -123,11 +131,6 @@ func TestBasic(t *testing.T) {
 }
 
 func TestMulti(t *testing.T) {
-	err := logging.SetLogLevel("client", "debug")
-	require.NoError(t, err)
-	err = logging.SetLogLevel("provider", "debug")
-	require.NoError(t, err)
-
 	numClients := 3
 	numProviders := 3
 	data := [][]byte{
@@ -145,15 +148,12 @@ func TestMulti(t *testing.T) {
 
 	// create and start clients
 	for i := 0; i < numClients; i++ {
-		net := newTestNetwork(t)
+		net, stop := newTestNetwork(t)
 		c := client.NewClient(net)
 
-		err = c.Start()
+		err := c.Start()
 		require.NoError(t, err)
-		defer func() {
-			err = c.Stop()
-			require.NoError(t, err)
-		}()
+		defer stop()
 
 		clients[i] = c
 		cnets[i] = net
@@ -161,16 +161,13 @@ func TestMulti(t *testing.T) {
 
 	// create and start providers
 	for i := 0; i < numProviders; i++ {
-		net := newTestNetwork(t)
+		net, stop := newTestNetwork(t)
 		bs := newTestBlockstore()
 		p := provider.NewProvider(net, bs, cache.NewMockCache(0))
 
-		err = p.Start()
+		err := p.Start()
 		require.NoError(t, err)
-		defer func() {
-			err = p.Stop()
-			require.NoError(t, err)
-		}()
+		defer stop()
 
 		providers[i] = p
 		blockstores[i] = bs
@@ -190,7 +187,7 @@ func TestMulti(t *testing.T) {
 		// add data block to blockstore
 		b := block.NewBlock(data[i])
 		cids[i] = b.Cid()
-		err = bs.Put(b)
+		err := bs.Put(b)
 		require.NoError(t, err)
 	}
 
@@ -202,7 +199,7 @@ func TestMulti(t *testing.T) {
 		defer unsubscribe()
 
 		// submit query
-		err = c.SubmitQuery(context.Background(), cids[i])
+		err := c.SubmitQuery(context.Background(), cids[i])
 		require.NoError(t, err)
 
 		// assert response was received
@@ -225,18 +222,13 @@ func TestMulti(t *testing.T) {
 }
 
 func TestMultiProvider(t *testing.T) {
-	err := logging.SetLogLevel("client", "debug")
-	require.NoError(t, err)
-	err = logging.SetLogLevel("provider", "debug")
-	require.NoError(t, err)
-
-	pnet0 := newTestNetwork(t)
-	pnet1 := newTestNetwork(t)
-	cnet := newTestNetwork(t)
+	pnet0, p0Stop := newTestNetwork(t)
+	pnet1, p1Stop := newTestNetwork(t)
+	cnet, cStop := newTestNetwork(t)
 	bs0 := newTestBlockstore()
 	bs1 := newTestBlockstore()
 
-	err = pnet0.Connect(cnet.AddrInfo())
+	err := pnet0.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
 	err = pnet1.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
@@ -260,24 +252,15 @@ func TestMultiProvider(t *testing.T) {
 	// start providers and client
 	err = p0.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = p0.Stop()
-		require.NoError(t, err)
-	}()
+	defer p0Stop()
 
 	err = p1.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = p1.Stop()
-		require.NoError(t, err)
-	}()
+	defer p1Stop()
 
 	err = c.Start()
 	require.NoError(t, err)
-	defer func() {
-		err = c.Stop()
-		require.NoError(t, err)
-	}()
+	defer cStop()
 
 	// query for CID, should receive responses from both providers
 	bt := newBasicTester()
@@ -296,7 +279,7 @@ func TestMultiProvider(t *testing.T) {
 		PaymentIntervalIncrease: 0,
 	}
 
-	receviedFrom := []peer.ID{}
+	receivedFrom := []peer.ID{}
 
 	for i := 0; i < 2; i++ {
 		select {
@@ -306,7 +289,7 @@ func TestMultiProvider(t *testing.T) {
 			resp.Provider = ""
 			require.Equal(t, expected, resp)
 			t.Log("received from", respProvider)
-			receviedFrom = append(receviedFrom, respProvider)
+			receivedFrom = append(receivedFrom, respProvider)
 		case <-time.After(testTimeout):
 			t.Fatal("did not receive response")
 		}
@@ -317,8 +300,8 @@ func TestMultiProvider(t *testing.T) {
 	sort.Slice(expectedResponders, func(i, j int) bool {
 		return expectedResponders[i].String() < expectedResponders[j].String()
 	})
-	sort.Slice(receviedFrom, func(i, j int) bool {
-		return receviedFrom[i].String() < receviedFrom[j].String()
+	sort.Slice(receivedFrom, func(i, j int) bool {
+		return receivedFrom[i].String() < receivedFrom[j].String()
 	})
-	require.Equal(t, expectedResponders, receviedFrom)
+	require.Equal(t, expectedResponders, receivedFrom)
 }

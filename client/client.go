@@ -130,12 +130,11 @@ func (c *Client) HandleProviderResponse(msg []byte) {
 		return
 	}
 
-	log.Debug("Response received for requested CID: ", response.PayloadCID)
+	log.Info("Response received for requested CID: ", response.PayloadCID)
 
 	c.subscribersLock.Lock()
 	defer c.subscribersLock.Unlock()
 	if sub := c.subscribers[response.PayloadCID]; sub != nil {
-		log.Info("Response received for requested CID: ", response.PayloadCID)
 		for _, notifyFn := range sub {
 			notifyFn(response)
 		}

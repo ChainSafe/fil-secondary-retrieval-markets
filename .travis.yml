@@ -22,7 +22,7 @@ jobs:
       go: 1.14.x
       name: "Test"
       script:
-        - make test
+        - go test -v ./...
     - language: go
       go: 1.14.x
       name: "Test the test"

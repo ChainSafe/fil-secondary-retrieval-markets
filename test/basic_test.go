@@ -73,7 +73,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestBasic(t *testing.T) {
-	t.Skip()
 	pnet, phost := newTestNetwork(t)
 	cnet, chost := newTestNetwork(t)
 	bs := newTestBlockstore()

@@ -23,3 +23,8 @@ jobs:
       name: "Test"
       script:
         - make test
+    - language: go
+      go: 1.14.x
+      name: "Test the test"
+      script:
+        - go test -v -run ^TestMulti$ ./test

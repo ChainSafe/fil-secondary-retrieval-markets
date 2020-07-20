@@ -22,6 +22,7 @@ import (
 
 var testMultiAddrStr = "/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N"
 var testCacheSize = 64
+var testTimeout = time.Second * 15
 
 type mockNetwork struct {
 	msgs chan []byte
@@ -126,4 +127,64 @@ func TestProvider_Response(t *testing.T) {
 	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 10)
 	require.Equal(t, expected, n.sent)
+}
+
+type mockQueryHandler struct {
+	received chan shared.Query
+}
+
+func newMockQueryHandler() *mockQueryHandler {
+	return &mockQueryHandler{
+		received: make(chan shared.Query),
+	}
+}
+
+func (h *mockQueryHandler) handleQuery(query shared.Query) {
+	h.received <- query
+}
+
+func TestSubscribe(t *testing.T) {
+	n := newMockNetwork()
+	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
+	err := p.Start()
+	require.NoError(t, err)
+
+	defer func() {
+		err = p.Stop()
+		require.NoError(t, err)
+	}()
+
+	// subscribe to queries
+	h := newMockQueryHandler()
+	unsubscribe := p.SubscribeToQueries(h.handleQuery)
+
+	// create query
+	b := block.NewBlock([]byte("noot"))
+	testCid := b.Cid()
+	query := &shared.Query{
+		PayloadCID:  testCid,
+		ClientAddrs: []string{testMultiAddrStr},
+	}
+
+	// send query to provider
+	bz, err := query.Marshal()
+	require.NoError(t, err)
+	n.msgs <- bz
+
+	select {
+	case q := <-h.received:
+		require.Equal(t, *query, q)
+	case <-time.After(testTimeout):
+		t.Fatal("did not receive query")
+	}
+
+	// unsubscribe and make sure no queries are received
+	unsubscribe()
+	n.msgs <- bz
+
+	select {
+	case <-h.received:
+		t.Fatal("received query after unsubscribing")
+	default:
+	}
 }

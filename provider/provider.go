@@ -6,6 +6,8 @@ package provider
 import (
 	"context"
 	"math/big"
+	"reflect"
+	"sync"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
@@ -15,20 +17,26 @@ import (
 
 var log = logging.Logger("provider")
 
+type ProviderSubscriber func(query shared.Query)
+type Unsubscribe func()
+
 // Provider ...
 type Provider struct {
-	net        Network
-	blockstore blockstore.Blockstore
-	cache      RequestCache
-	msgs       <-chan []byte
+	net             Network
+	blockstore      blockstore.Blockstore
+	cache           RequestCache
+	msgs            <-chan []byte
+	subscribers     []ProviderSubscriber
+	subscribersLock sync.Mutex
 }
 
 // NewProvider returns a new Provider
 func NewProvider(net Network, bs blockstore.Blockstore, cache RequestCache) *Provider {
 	return &Provider{
-		net:        net,
-		blockstore: bs,
-		cache:      cache,
+		net:         net,
+		blockstore:  bs,
+		cache:       cache,
+		subscribers: []ProviderSubscriber{},
 	}
 }
 
@@ -49,6 +57,30 @@ func (p *Provider) Stop() error {
 	return p.net.Stop()
 }
 
+// SubscribeToQueries registers the given subscriber and calls it upon receiving queries
+func (p *Provider) SubscribeToQueries(s ProviderSubscriber) Unsubscribe {
+	p.subscribersLock.Lock()
+	defer p.subscribersLock.Unlock()
+
+	p.subscribers = append(p.subscribers, s)
+	return p.unsubscribeAt(s)
+}
+
+func (p *Provider) unsubscribeAt(s ProviderSubscriber) Unsubscribe {
+	return func() {
+		p.subscribersLock.Lock()
+		defer p.subscribersLock.Unlock()
+		curLen := len(p.subscribers)
+		for i, el := range p.subscribers {
+			if reflect.ValueOf(s) == reflect.ValueOf(el) {
+				p.subscribers[i] = p.subscribers[curLen-1]
+				p.subscribers = p.subscribers[:curLen-1]
+				return
+			}
+		}
+	}
+}
+
 func (p *Provider) handleMessages() {
 	for msg := range p.msgs {
 		query := new(shared.Query)
@@ -57,6 +89,8 @@ func (p *Provider) handleMessages() {
 			log.Error("cannot unmarshal query; error:", err)
 			continue
 		}
+
+		p.notifySubscribers(*query)
 
 		log.Debug("received query for CID", query.PayloadCID)
 		has, err := p.hasData(query.PayloadCID)
@@ -73,6 +107,15 @@ func (p *Provider) handleMessages() {
 		}
 
 		p.cache.Put(query.PayloadCID)
+	}
+}
+
+func (p *Provider) notifySubscribers(query shared.Query) {
+	p.subscribersLock.Lock()
+	defer p.subscribersLock.Unlock()
+
+	for _, s := range p.subscribers {
+		s(query)
 	}
 }
 

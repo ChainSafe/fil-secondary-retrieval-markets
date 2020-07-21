@@ -73,6 +73,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	time.Sleep(time.Second * 10)
 	os.Exit(m.Run())
 }
 

@@ -106,6 +106,7 @@ func (p *Provider) handleMessages() {
 			}
 		}
 
+		// TODO: update cache to accept params?
 		p.cache.Put(query.Params.PayloadCID)
 	}
 }

@@ -70,9 +70,6 @@ func TestClient_SubmitQuery(t *testing.T) {
 	host := &mockNetwork{queries: []shared.Query{}}
 	client := NewClient(host)
 
-	// testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
-	// require.NoError(t, err)
-
 	query := shared.Query{
 		Params:      testParams,
 		ClientAddrs: []string{testMultiAddr.String()},
@@ -87,9 +84,6 @@ func TestClient_SubmitQuery(t *testing.T) {
 func TestClient_SubscribeToQueryResponses(t *testing.T) {
 	host := &mockNetwork{queries: []shared.Query{}}
 	client := NewClient(host)
-
-	// testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
-	// require.NoError(t, err)
 
 	testPeerId, err := peer.Decode("QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 	require.NoError(t, err)

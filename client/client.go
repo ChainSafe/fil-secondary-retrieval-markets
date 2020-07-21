@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
-	//"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p-core/network"
 )

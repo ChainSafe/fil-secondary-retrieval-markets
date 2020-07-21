@@ -76,6 +76,8 @@ func TestBasic(t *testing.T) {
 	err = bs.Put(b)
 	require.NoError(t, err)
 
+	params := shared.Params{PayloadCID: testCid}
+
 	// start provider
 	err = p.Start()
 	require.NoError(t, err)
@@ -94,16 +96,16 @@ func TestBasic(t *testing.T) {
 
 	// subscribe to responses
 	bt := newBasicTester()
-	unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, testCid)
+	unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, params)
 	defer unsubscribe()
 
 	// submit query
-	err = c.SubmitQuery(context.Background(), testCid)
+	err = c.SubmitQuery(context.Background(), params)
 	require.NoError(t, err)
 
 	// assert response was received
 	expected := &shared.QueryResponse{
-		PayloadCID:              testCid,
+		Params:                  params,
 		Provider:                pnet.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,

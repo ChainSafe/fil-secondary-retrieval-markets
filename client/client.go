@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
-	"github.com/ipfs/go-cid"
+	//"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p-core/network"
 )
@@ -26,14 +26,14 @@ type Unsubscribe func()
 type Client struct {
 	net             Network
 	subscribersLock *sync.Mutex
-	subscribers     map[cid.Cid][]ClientSubscriber
+	subscribers     map[shared.Params][]ClientSubscriber
 }
 
 func NewClient(net Network) *Client {
 	c := &Client{
 		net:             net,
 		subscribersLock: &sync.Mutex{},
-		subscribers:     make(map[cid.Cid][]ClientSubscriber),
+		subscribers:     make(map[shared.Params][]ClientSubscriber),
 	}
 
 	// Register handler for provider responses
@@ -53,9 +53,9 @@ func (c *Client) Stop() error {
 }
 
 // SubmitQuery encodes a query and submits it to the network to be gossiped
-func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
+func (c *Client) SubmitQuery(ctx context.Context, params shared.Params) error {
 	query := shared.Query{
-		PayloadCID:  cid,
+		Params:      params,
 		ClientAddrs: c.net.MultiAddrs(),
 	}
 	bz, err := json.Marshal(query)
@@ -73,33 +73,33 @@ func (c *Client) SubmitQuery(ctx context.Context, cid cid.Cid) error {
 
 // SubscribeQueryResponses registers a subscriber as a listener for a specific payload CID.
 // It returns an unsubscribe method that can be called to terminate the subscription.
-func (c *Client) SubscribeToQueryResponses(subscriber ClientSubscriber, payloadCID cid.Cid) Unsubscribe {
+func (c *Client) SubscribeToQueryResponses(subscriber ClientSubscriber, params shared.Params) Unsubscribe {
 	c.subscribersLock.Lock()
-	c.subscribers[payloadCID] = append(c.subscribers[payloadCID], subscriber)
+	c.subscribers[params] = append(c.subscribers[params], subscriber)
 	c.subscribersLock.Unlock()
 
-	return c.unsubscribeAt(subscriber, payloadCID)
+	return c.unsubscribeAt(subscriber, params)
 }
 
 // unsubscribeAt returns a function that removes an item from a CID's subscribers list by comparing
 // their reflect.ValueOf before pulling the item out of the slice.  Does not preserve order.
 // Subsequent, repeated calls to the func with the same Subscriber are a no-op.
 // Modified from: https://github.com/filecoin-project/go-fil-markets/blob/6ca8089cea5477fd8539e70ca9b34a61ada6dc27/retrievalmarket/impl/provider.go#L139
-func (c *Client) unsubscribeAt(sub ClientSubscriber, cid cid.Cid) Unsubscribe {
+func (c *Client) unsubscribeAt(sub ClientSubscriber, params shared.Params) Unsubscribe {
 	return func() {
 		c.subscribersLock.Lock()
 		defer c.subscribersLock.Unlock()
-		curLen := len(c.subscribers[cid])
+		curLen := len(c.subscribers[params])
 		// Remove entry from map if last subscriber
 		if curLen == 1 {
-			delete(c.subscribers, cid)
+			delete(c.subscribers, params)
 			return
 		}
 
-		for i, el := range c.subscribers[cid] {
+		for i, el := range c.subscribers[params] {
 			if reflect.ValueOf(sub) == reflect.ValueOf(el) {
-				c.subscribers[cid][i] = c.subscribers[cid][curLen-1]
-				c.subscribers[cid] = c.subscribers[cid][:curLen-1]
+				c.subscribers[params][i] = c.subscribers[params][curLen-1]
+				c.subscribers[params] = c.subscribers[params][:curLen-1]
 				return
 			}
 		}
@@ -130,16 +130,16 @@ func (c *Client) HandleProviderResponse(msg []byte) {
 		return
 	}
 
-	log.Debug("Response received for requested CID: ", response.PayloadCID)
+	log.Debug("Response received for requested params: ", response.Params)
 
 	c.subscribersLock.Lock()
 	defer c.subscribersLock.Unlock()
-	if sub := c.subscribers[response.PayloadCID]; sub != nil {
-		log.Info("Response received for requested CID: ", response.PayloadCID)
+	if sub := c.subscribers[response.Params]; sub != nil {
+		log.Info("Response received for requested params: ", response.Params)
 		for _, notifyFn := range sub {
 			notifyFn(response)
 		}
 	} else {
-		log.Debug("Provider response received for unknown CID: ", response.PayloadCID)
+		log.Debug("Provider response received for unknown params: ", response.Params)
 	}
 }

@@ -22,6 +22,11 @@ import (
 
 var testMultiAddr = multiaddr.StringCast("/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 
+var testCid, _ = cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
+var testParams = shared.Params{
+	PayloadCID: testCid,
+}
+
 type mockNetwork struct{ queries []shared.Query }
 
 func (n *mockNetwork) Start() error {
@@ -65,15 +70,15 @@ func TestClient_SubmitQuery(t *testing.T) {
 	host := &mockNetwork{queries: []shared.Query{}}
 	client := NewClient(host)
 
-	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
-	require.NoError(t, err)
+	// testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
+	// require.NoError(t, err)
 
 	query := shared.Query{
-		PayloadCID:  testCid,
+		Params:      testParams,
 		ClientAddrs: []string{testMultiAddr.String()},
 	}
 
-	err = client.SubmitQuery(context.Background(), testCid)
+	err := client.SubmitQuery(context.Background(), testParams)
 	require.NoError(t, err)
 
 	require.ElementsMatch(t, []shared.Query{query}, host.queries)
@@ -83,14 +88,14 @@ func TestClient_SubscribeToQueryResponses(t *testing.T) {
 	host := &mockNetwork{queries: []shared.Query{}}
 	client := NewClient(host)
 
-	testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
-	require.NoError(t, err)
+	// testCid, err := cid.Decode("bafybeierhgbz4zp2x2u67urqrgfnrnlukciupzenpqpipiz5nwtq7uxpx4")
+	// require.NoError(t, err)
 
 	testPeerId, err := peer.Decode("QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N")
 	require.NoError(t, err)
 
 	response := shared.QueryResponse{
-		PayloadCID:              testCid,
+		Params:                  testParams,
 		Provider:                testPeerId,
 		Total:                   big.NewInt(10),
 		PaymentInterval:         0,
@@ -113,8 +118,8 @@ func TestClient_SubscribeToQueryResponses(t *testing.T) {
 		responsesB <- resp
 	}
 
-	unsubA := client.SubscribeToQueryResponses(subscriberA, testCid)
-	unsubB := client.SubscribeToQueryResponses(subscriberB, testCid)
+	unsubA := client.SubscribeToQueryResponses(subscriberA, testParams)
+	unsubB := client.SubscribeToQueryResponses(subscriberB, testParams)
 	defer unsubB()
 
 	// Process response and wait for result

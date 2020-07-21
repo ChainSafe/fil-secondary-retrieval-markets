@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/client"
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli"
@@ -81,16 +82,20 @@ func run(ctx *cli.Context) error {
 		}
 	}()
 
+	params := shared.Params{
+		PayloadCID: cid,
+	}
+
 	h := newResponseHandler()
-	unsubscribe := c.SubscribeToQueryResponses(h.handleResponse, cid)
+	unsubscribe := c.SubscribeToQueryResponses(h.handleResponse, params)
 	defer unsubscribe()
 
-	err = c.SubmitQuery(context.Background(), cid)
+	err = c.SubmitQuery(context.Background(), params)
 	if err != nil {
 		return err
 	}
 
-	log.Info("submit query ", cid)
+	log.Info("submit query ", params)
 
 	for {
 		select {

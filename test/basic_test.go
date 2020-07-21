@@ -232,6 +232,10 @@ func TestMultiProvider(t *testing.T) {
 	err = pnet1.Connect(pnet0.AddrInfo())
 	require.NoError(t, err)
 
+	require.GreaterOrEqual(t, len(pnet0.Peers()), 2)
+	require.GreaterOrEqual(t, len(pnet1.Peers()), 2)
+	require.GreaterOrEqual(t, len(cnet.Peers()), 2)
+
 	p0 := provider.NewProvider(pnet0, bs0, cache.NewMockCache(0))
 	p1 := provider.NewProvider(pnet1, bs1, cache.NewMockCache(0))
 	c := client.NewClient(cnet)

@@ -19,6 +19,21 @@ type Params struct {
 	Selector   ipld.Node
 }
 
+// Marshal returns the JSON marshalled Params
+func (p *Params) Marshal() ([]byte, error) {
+	return json.Marshal(p)
+}
+
+// MustString returns Params as a string
+// It panics if it fails to marshal the Params
+func (p *Params) MustString() string {
+	bz, err := p.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return string(bz)
+}
+
 // Query is submitted by clients and observed by providers
 type Query struct {
 	Params      Params   `json:"params"`      // CID of data being requested

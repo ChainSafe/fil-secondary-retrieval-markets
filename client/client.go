@@ -25,14 +25,14 @@ type Unsubscribe func()
 type Client struct {
 	net             Network
 	subscribersLock *sync.Mutex
-	subscribers     map[shared.Params][]ClientSubscriber
+	subscribers     map[string][]ClientSubscriber
 }
 
 func NewClient(net Network) *Client {
 	c := &Client{
 		net:             net,
 		subscribersLock: &sync.Mutex{},
-		subscribers:     make(map[shared.Params][]ClientSubscriber),
+		subscribers:     make(map[string][]ClientSubscriber),
 	}
 
 	// Register handler for provider responses
@@ -74,7 +74,8 @@ func (c *Client) SubmitQuery(ctx context.Context, params shared.Params) error {
 // It returns an unsubscribe method that can be called to terminate the subscription.
 func (c *Client) SubscribeToQueryResponses(subscriber ClientSubscriber, params shared.Params) Unsubscribe {
 	c.subscribersLock.Lock()
-	c.subscribers[params] = append(c.subscribers[params], subscriber)
+	str := params.MustString()
+	c.subscribers[str] = append(c.subscribers[str], subscriber)
 	c.subscribersLock.Unlock()
 
 	return c.unsubscribeAt(subscriber, params)
@@ -86,19 +87,20 @@ func (c *Client) SubscribeToQueryResponses(subscriber ClientSubscriber, params s
 // Modified from: https://github.com/filecoin-project/go-fil-markets/blob/6ca8089cea5477fd8539e70ca9b34a61ada6dc27/retrievalmarket/impl/provider.go#L139
 func (c *Client) unsubscribeAt(sub ClientSubscriber, params shared.Params) Unsubscribe {
 	return func() {
+		str := params.MustString()
 		c.subscribersLock.Lock()
 		defer c.subscribersLock.Unlock()
-		curLen := len(c.subscribers[params])
+		curLen := len(c.subscribers[str])
 		// Remove entry from map if last subscriber
 		if curLen == 1 {
-			delete(c.subscribers, params)
+			delete(c.subscribers, str)
 			return
 		}
 
-		for i, el := range c.subscribers[params] {
+		for i, el := range c.subscribers[str] {
 			if reflect.ValueOf(sub) == reflect.ValueOf(el) {
-				c.subscribers[params][i] = c.subscribers[params][curLen-1]
-				c.subscribers[params] = c.subscribers[params][:curLen-1]
+				c.subscribers[str][i] = c.subscribers[str][curLen-1]
+				c.subscribers[str] = c.subscribers[str][:curLen-1]
 				return
 			}
 		}
@@ -133,7 +135,8 @@ func (c *Client) HandleProviderResponse(msg []byte) {
 
 	c.subscribersLock.Lock()
 	defer c.subscribersLock.Unlock()
-	if sub := c.subscribers[response.Params]; sub != nil {
+	str := response.Params.MustString()
+	if sub := c.subscribers[str]; sub != nil {
 		log.Info("Response received for requested params: ", response.Params)
 		for _, notifyFn := range sub {
 			notifyFn(response)

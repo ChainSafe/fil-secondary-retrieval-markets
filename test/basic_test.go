@@ -219,6 +219,10 @@ func TestMulti(t *testing.T) {
 }
 
 func TestMultiProvider(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TestMultiProvider")
+	}
+
 	pnet0 := newTestNetwork(t)
 	pnet1 := newTestNetwork(t)
 	cnet := newTestNetwork(t)

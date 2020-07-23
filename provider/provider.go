@@ -92,8 +92,8 @@ func (p *Provider) handleMessages() {
 
 		p.notifySubscribers(*query)
 
-		log.Debug("received query for CID", query.PayloadCID)
-		has, err := p.hasData(query.PayloadCID)
+		log.Debug("received query for params", query.Params)
+		has, err := p.hasData(query.Params.PayloadCID)
 		if err != nil {
 			log.Error("failed to check for data in blockstore; error:", err)
 			continue
@@ -106,7 +106,8 @@ func (p *Provider) handleMessages() {
 			}
 		}
 
-		p.cache.Put(query.PayloadCID)
+		// TODO: update cache to accept params?
+		p.cache.Put(query.Params.PayloadCID)
 	}
 }
 
@@ -125,7 +126,7 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	}
 
 	resp := &shared.QueryResponse{
-		PayloadCID:              query.PayloadCID,
+		Params:                  query.Params,
 		Provider:                p.net.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,

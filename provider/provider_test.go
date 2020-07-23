@@ -106,7 +106,9 @@ func TestProvider_Response(t *testing.T) {
 	require.NoError(t, err)
 
 	query := &shared.Query{
-		PayloadCID:  testCid,
+		Params: shared.Params{
+			PayloadCID: testCid,
+		},
 		ClientAddrs: []string{testMultiAddrStr},
 	}
 
@@ -116,7 +118,7 @@ func TestProvider_Response(t *testing.T) {
 	n.msgs <- bz
 
 	resp := &shared.QueryResponse{
-		PayloadCID:              query.PayloadCID,
+		Params:                  query.Params,
 		Provider:                n.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,
@@ -162,7 +164,9 @@ func TestSubscribe(t *testing.T) {
 	b := block.NewBlock([]byte("noot"))
 	testCid := b.Cid()
 	query := &shared.Query{
-		PayloadCID:  testCid,
+		Params: shared.Params{
+			PayloadCID: testCid,
+		},
 		ClientAddrs: []string{testMultiAddrStr},
 	}
 

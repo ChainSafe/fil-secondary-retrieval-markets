@@ -9,6 +9,7 @@ require (
 	github.com/ipfs/go-datastore v0.4.4
 	github.com/ipfs/go-ipfs-blockstore v1.0.0
 	github.com/ipfs/go-log/v2 v2.0.5
+	github.com/ipsn/go-ipfs v0.0.0-20190407150747-8b9b72514244
 	github.com/libp2p/go-libp2p v0.10.0
 	github.com/libp2p/go-libp2p-connmgr v0.2.4 // indirect
 	github.com/libp2p/go-libp2p-core v0.6.0

@@ -94,6 +94,8 @@ func TestBasic(t *testing.T) {
 	err = bs.Put(b)
 	require.NoError(t, err)
 
+	params := shared.Params{PayloadCID: testCid}
+
 	// start provider
 	err = p.Start()
 	require.NoError(t, err)
@@ -104,16 +106,16 @@ func TestBasic(t *testing.T) {
 
 	// subscribe to responses
 	bt := newBasicTester()
-	unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, testCid)
+	unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, params)
 	defer unsubscribe()
 
 	// submit query
-	err = c.SubmitQuery(context.Background(), testCid)
+	err = c.SubmitQuery(context.Background(), params)
 	require.NoError(t, err)
 
 	// assert response was received
 	expected := &shared.QueryResponse{
-		PayloadCID:              testCid,
+		Params:                  params,
 		Provider:                pnet.PeerID(),
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,
@@ -190,18 +192,22 @@ func TestMulti(t *testing.T) {
 
 	// each client queries for a different cid
 	for i, c := range clients {
+		params := shared.Params{
+			PayloadCID: cids[i],
+		}
+
 		// subscribe to responses
 		bt := newBasicTester()
-		unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, cids[i])
+		unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, params)
 		defer unsubscribe()
 
 		// submit query
-		err := c.SubmitQuery(context.Background(), cids[i])
+		err := c.SubmitQuery(context.Background(), params)
 		require.NoError(t, err)
 
 		// assert response was received
 		expected := &shared.QueryResponse{
-			PayloadCID:              cids[i],
+			Params:                  params,
 			Provider:                pnets[i].PeerID(),
 			Total:                   big.NewInt(0),
 			PaymentInterval:         0,
@@ -262,18 +268,22 @@ func TestMultiProvider(t *testing.T) {
 	err = c.Start()
 	require.NoError(t, err)
 
+	params := shared.Params{
+		PayloadCID: testCid,
+	}
+
 	// query for CID, should receive responses from both providers
 	bt := newBasicTester()
-	unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, testCid)
+	unsubscribe := c.SubscribeToQueryResponses(bt.handleResponse, params)
 	defer unsubscribe()
 
 	// submit query
-	err = c.SubmitQuery(context.Background(), testCid)
+	err = c.SubmitQuery(context.Background(), params)
 	require.NoError(t, err)
 
 	// assert response was received
 	expected := &shared.QueryResponse{
-		PayloadCID:              testCid,
+		Params:                  params,
 		Total:                   big.NewInt(0),
 		PaymentInterval:         0,
 		PaymentIntervalIncrease: 0,

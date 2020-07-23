@@ -10,8 +10,6 @@ import (
 	"sync"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
-	"github.com/ipfs/go-cid"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	logging "github.com/ipfs/go-log/v2"
 )
 
@@ -23,7 +21,7 @@ type Unsubscribe func()
 // Provider ...
 type Provider struct {
 	net             Network
-	blockstore      blockstore.Blockstore
+	store           RetrievalProviderStore
 	cache           RequestCache
 	msgs            <-chan []byte
 	subscribers     []ProviderSubscriber
@@ -31,10 +29,10 @@ type Provider struct {
 }
 
 // NewProvider returns a new Provider
-func NewProvider(net Network, bs blockstore.Blockstore, cache RequestCache) *Provider {
+func NewProvider(net Network, s RetrievalProviderStore, cache RequestCache) *Provider {
 	return &Provider{
 		net:         net,
-		blockstore:  bs,
+		store:       s,
 		cache:       cache,
 		subscribers: []ProviderSubscriber{},
 	}
@@ -93,7 +91,7 @@ func (p *Provider) handleMessages() {
 		p.notifySubscribers(*query)
 
 		log.Debug("received query for params", query.Params)
-		has, err := p.hasData(query.Params.PayloadCID)
+		has, err := p.hasData(query.Params)
 		if err != nil {
 			log.Error("failed to check for data in blockstore; error:", err)
 			continue
@@ -164,6 +162,6 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	return p.net.Send(context.Background(), shared.ResponseProtocolID, addrs[0].ID, bz)
 }
 
-func (p *Provider) hasData(data cid.Cid) (bool, error) {
-	return p.blockstore.Has(data)
+func (p *Provider) hasData(params shared.Params) (bool, error) {
+	return p.store.Has(params)
 }

@@ -68,6 +68,20 @@ func (n *mockNetwork) PeerID() peer.ID {
 	return id
 }
 
+type mockRetrievalProviderStore struct {
+	bs blockstore.Blockstore
+}
+
+func newTestRetrievalProviderStore() *mockRetrievalProviderStore {
+	return &mockRetrievalProviderStore{
+		bs: newTestBlockstore(),
+	}
+}
+
+func (s *mockRetrievalProviderStore) Has(params shared.Params) (bool, error) {
+	return s.bs.Has(params.PayloadCID)
+}
+
 func newTestBlockstore() blockstore.Blockstore {
 	nds := ds.NewMapDatastore()
 	return blockstore.NewBlockstore(nds)
@@ -75,7 +89,7 @@ func newTestBlockstore() blockstore.Blockstore {
 
 func TestProvider(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -90,7 +104,7 @@ func TestProvider(t *testing.T) {
 
 func TestProvider_Response(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -102,7 +116,7 @@ func TestProvider_Response(t *testing.T) {
 	b := block.NewBlock([]byte("noot"))
 	testCid := b.Cid()
 
-	err = p.blockstore.Put(b)
+	err = p.store.(*mockRetrievalProviderStore).bs.Put(b)
 	require.NoError(t, err)
 
 	query := &shared.Query{
@@ -147,7 +161,7 @@ func (h *mockQueryHandler) handleQuery(query shared.Query) {
 
 func TestSubscribe(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 

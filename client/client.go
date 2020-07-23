@@ -131,13 +131,12 @@ func (c *Client) HandleProviderResponse(msg []byte) {
 		return
 	}
 
-	log.Debug("Response received for requested params: ", response.Params)
+	log.Info("Response received for requested params: ", response.Params)
 
 	c.subscribersLock.Lock()
 	defer c.subscribersLock.Unlock()
 	str := response.Params.MustString()
 	if sub := c.subscribers[str]; sub != nil {
-		log.Info("Response received for requested params: ", response.Params)
 		for _, notifyFn := range sub {
 			notifyFn(response)
 		}

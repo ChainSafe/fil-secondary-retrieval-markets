@@ -36,7 +36,7 @@ func (p *Params) MustString() string {
 
 // Query is submitted by clients and observed by providers
 type Query struct {
-	Params      Params   `json:"params"`      // CID of data being requested
+	Params      Params   `json:"params"`      // Requested data
 	ClientAddrs []string `json:"clientAddrs"` // List of multiaddrs of the client
 }
 
@@ -52,7 +52,7 @@ func (q *Query) Unmarshal(bz []byte) error {
 
 // QueryResponse is returned from a provider to a client if the provider has the requested data
 type QueryResponse struct {
-	Params Params `json:"params"` // CID of data being requested
+	Params Params `json:"params"` // Requested data
 	// TODO: Do we need their FIL address as well?
 	Provider                peer.ID  `json:"provider"` // List of multiaddrs of the provider
 	Total                   *big.Int `json:"total"`    // Total cost

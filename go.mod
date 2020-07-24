@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/ChainSafe/go-lfu v0.0.0-20200709222421-81e9638081bd
+	github.com/filecoin-project/specs-actors v0.8.0
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.6
 	github.com/ipfs/go-datastore v0.4.4

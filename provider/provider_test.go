@@ -121,8 +121,8 @@ func TestProvider_Response(t *testing.T) {
 		Params:                  query.Params,
 		Provider:                n.PeerID(),
 		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		PaymentInterval:         DefaultPaymentInterval,
+		PaymentIntervalIncrease: DefaultPaymentIntervalIncrease,
 	}
 
 	expected, err := resp.Marshal()

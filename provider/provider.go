@@ -159,9 +159,9 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	resp := &shared.QueryResponse{
 		Params:                  query.Params,
 		Provider:                p.net.PeerID(),
-		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		Total:                   big.NewInt(0), // TODO: requires size of data in bytes
+		PaymentInterval:         p.paymentInterval,
+		PaymentIntervalIncrease: p.paymentIntervalIncrease,
 	}
 
 	addrs, err := shared.StringsToAddrInfos(query.ClientAddrs)

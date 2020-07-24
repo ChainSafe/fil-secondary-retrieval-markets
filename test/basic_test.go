@@ -118,8 +118,8 @@ func TestBasic(t *testing.T) {
 		Params:                  params,
 		Provider:                pnet.PeerID(),
 		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		PaymentInterval:         provider.DefaultPaymentInterval,
+		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}
 
 	select {
@@ -210,8 +210,8 @@ func TestMulti(t *testing.T) {
 			Params:                  params,
 			Provider:                pnets[i].PeerID(),
 			Total:                   big.NewInt(0),
-			PaymentInterval:         0,
-			PaymentIntervalIncrease: 0,
+			PaymentInterval:         provider.DefaultPaymentInterval,
+			PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 		}
 
 		select {
@@ -285,8 +285,8 @@ func TestMultiProvider(t *testing.T) {
 	expected := &shared.QueryResponse{
 		Params:                  params,
 		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		PaymentInterval:         provider.DefaultPaymentInterval,
+		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}
 
 	receivedFrom := []peer.ID{}

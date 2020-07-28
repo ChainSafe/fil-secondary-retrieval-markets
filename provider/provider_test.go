@@ -11,6 +11,7 @@ import (
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/cache"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
+	"github.com/filecoin-project/specs-actors/actors/abi"
 	block "github.com/ipfs/go-block-format"
 	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -23,6 +24,7 @@ import (
 var testMultiAddrStr = "/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N"
 var testCacheSize = 64
 var testTimeout = time.Second * 15
+var testSize = big.NewInt(1)
 
 type mockNetwork struct {
 	msgs chan []byte
@@ -68,6 +70,24 @@ func (n *mockNetwork) PeerID() peer.ID {
 	return id
 }
 
+type mockRetrievalProviderStore struct {
+	bs blockstore.Blockstore
+}
+
+func newTestRetrievalProviderStore() *mockRetrievalProviderStore {
+	return &mockRetrievalProviderStore{
+		bs: newTestBlockstore(),
+	}
+}
+
+func (s *mockRetrievalProviderStore) Has(params shared.Params) (bool, error) {
+	return s.bs.Has(params.PayloadCID)
+}
+
+func (s *mockRetrievalProviderStore) GetSize(params shared.Params) (*big.Int, error) {
+	return testSize, nil
+}
+
 func newTestBlockstore() blockstore.Blockstore {
 	nds := ds.NewMapDatastore()
 	return blockstore.NewBlockstore(nds)
@@ -75,7 +95,7 @@ func newTestBlockstore() blockstore.Blockstore {
 
 func TestProvider(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -90,7 +110,7 @@ func TestProvider(t *testing.T) {
 
 func TestProvider_Response(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 
@@ -102,7 +122,7 @@ func TestProvider_Response(t *testing.T) {
 	b := block.NewBlock([]byte("noot"))
 	testCid := b.Cid()
 
-	err = p.blockstore.Put(b)
+	err = p.store.(*mockRetrievalProviderStore).bs.Put(b)
 	require.NoError(t, err)
 
 	query := &shared.Query{
@@ -117,12 +137,63 @@ func TestProvider_Response(t *testing.T) {
 
 	n.msgs <- bz
 
+	price := big.NewInt(p.pricePerByte.Int64())
 	resp := &shared.QueryResponse{
 		Params:                  query.Params,
 		Provider:                n.PeerID(),
-		Total:                   big.NewInt(0),
+		Total:                   price,
 		PaymentInterval:         DefaultPaymentInterval,
 		PaymentIntervalIncrease: DefaultPaymentIntervalIncrease,
+	}
+
+	expected, err := resp.Marshal()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 10)
+	require.Equal(t, expected, n.sent)
+}
+
+func TestProvider_SetPricing(t *testing.T) {
+	n := newMockNetwork()
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
+	err := p.Start()
+	require.NoError(t, err)
+
+	price := abi.NewTokenAmount(10)
+	p.SetPricePerByte(price)
+	interval := uint64(33)
+	increase := uint64(44)
+	p.SetPaymentInterval(interval, increase)
+
+	defer func() {
+		err = p.Stop()
+		require.NoError(t, err)
+	}()
+
+	b := block.NewBlock([]byte("noot"))
+	testCid := b.Cid()
+
+	err = p.store.(*mockRetrievalProviderStore).bs.Put(b)
+	require.NoError(t, err)
+
+	query := &shared.Query{
+		Params: shared.Params{
+			PayloadCID: testCid,
+		},
+		ClientAddrs: []string{testMultiAddrStr},
+	}
+
+	bz, err := query.Marshal()
+	require.NoError(t, err)
+
+	n.msgs <- bz
+
+	total := big.NewInt(price.Int64())
+	resp := &shared.QueryResponse{
+		Params:                  query.Params,
+		Provider:                n.PeerID(),
+		Total:                   total,
+		PaymentInterval:         interval,
+		PaymentIntervalIncrease: increase,
 	}
 
 	expected, err := resp.Marshal()
@@ -147,7 +218,7 @@ func (h *mockQueryHandler) handleQuery(query shared.Query) {
 
 func TestSubscribe(t *testing.T) {
 	n := newMockNetwork()
-	p := NewProvider(n, newTestBlockstore(), cache.NewMockCache(testCacheSize))
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
 	err := p.Start()
 	require.NoError(t, err)
 

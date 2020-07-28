@@ -28,6 +28,7 @@ import (
 )
 
 var testTimeout = time.Second * 30
+var testSize = big.NewInt(1)
 
 func newTestNetwork(t *testing.T) *network.Network {
 	ctx := context.Background()
@@ -47,6 +48,24 @@ func newTestNetwork(t *testing.T) *network.Network {
 func newTestBlockstore() blockstore.Blockstore {
 	nds := ds.NewMapDatastore()
 	return blockstore.NewBlockstore(nds)
+}
+
+type mockRetrievalProviderStore struct {
+	bs blockstore.Blockstore
+}
+
+func newTestRetrievalProviderStore() *mockRetrievalProviderStore {
+	return &mockRetrievalProviderStore{
+		bs: newTestBlockstore(),
+	}
+}
+
+func (s *mockRetrievalProviderStore) Has(params shared.Params) (bool, error) {
+	return s.bs.Has(params.PayloadCID)
+}
+
+func (s *mockRetrievalProviderStore) GetSize(params shared.Params) (*big.Int, error) {
+	return testSize, nil
 }
 
 type basicTester struct {
@@ -80,18 +99,18 @@ func TestMain(m *testing.M) {
 func TestBasic(t *testing.T) {
 	pnet := newTestNetwork(t)
 	cnet := newTestNetwork(t)
-	bs := newTestBlockstore()
+	s := newTestRetrievalProviderStore()
 
 	err := pnet.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
 
-	p := provider.NewProvider(pnet, bs, cache.NewMockCache(0))
+	p := provider.NewProvider(pnet, s, cache.NewMockCache(0))
 	c := client.NewClient(cnet)
 
 	// add data block to blockstore
 	b := block.NewBlock([]byte("noot"))
 	testCid := b.Cid()
-	err = bs.Put(b)
+	err = s.bs.Put(b)
 	require.NoError(t, err)
 
 	params := shared.Params{PayloadCID: testCid}
@@ -114,10 +133,11 @@ func TestBasic(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert response was received
+	price := big.NewInt(provider.DefaultPricePerByte.Int64())
 	expected := &shared.QueryResponse{
 		Params:                  params,
 		Provider:                pnet.PeerID(),
-		Total:                   big.NewInt(0),
+		Total:                   price,
 		PaymentInterval:         provider.DefaultPaymentInterval,
 		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}
@@ -162,14 +182,14 @@ func TestMulti(t *testing.T) {
 	// create and start providers
 	for i := 0; i < numProviders; i++ {
 		net := newTestNetwork(t)
-		bs := newTestBlockstore()
-		p := provider.NewProvider(net, bs, cache.NewMockCache(0))
+		s := newTestRetrievalProviderStore()
+		p := provider.NewProvider(net, s, cache.NewMockCache(0))
 
 		err := p.Start()
 		require.NoError(t, err)
 
 		providers[i] = p
-		blockstores[i] = bs
+		blockstores[i] = s.bs
 		pnets[i] = net
 	}
 
@@ -206,10 +226,11 @@ func TestMulti(t *testing.T) {
 		require.NoError(t, err)
 
 		// assert response was received
+		price := big.NewInt(provider.DefaultPricePerByte.Int64())
 		expected := &shared.QueryResponse{
 			Params:                  params,
 			Provider:                pnets[i].PeerID(),
-			Total:                   big.NewInt(0),
+			Total:                   price,
 			PaymentInterval:         provider.DefaultPaymentInterval,
 			PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 		}
@@ -232,8 +253,8 @@ func TestMultiProvider(t *testing.T) {
 	pnet0 := newTestNetwork(t)
 	pnet1 := newTestNetwork(t)
 	cnet := newTestNetwork(t)
-	bs0 := newTestBlockstore()
-	bs1 := newTestBlockstore()
+	s0 := newTestRetrievalProviderStore()
+	s1 := newTestRetrievalProviderStore()
 
 	err := pnet0.Connect(cnet.AddrInfo())
 	require.NoError(t, err)
@@ -246,16 +267,16 @@ func TestMultiProvider(t *testing.T) {
 	require.GreaterOrEqual(t, len(pnet1.Peers()), 2)
 	require.GreaterOrEqual(t, len(cnet.Peers()), 2)
 
-	p0 := provider.NewProvider(pnet0, bs0, cache.NewMockCache(0))
-	p1 := provider.NewProvider(pnet1, bs1, cache.NewMockCache(0))
+	p0 := provider.NewProvider(pnet0, s0, cache.NewMockCache(0))
+	p1 := provider.NewProvider(pnet1, s1, cache.NewMockCache(0))
 	c := client.NewClient(cnet)
 
 	// add data to both providers's blockstores
 	b := block.NewBlock([]byte("noot"))
 	testCid := b.Cid()
-	err = bs0.Put(b)
+	err = s0.bs.Put(b)
 	require.NoError(t, err)
-	err = bs1.Put(b)
+	err = s1.bs.Put(b)
 	require.NoError(t, err)
 
 	// start providers and client
@@ -282,9 +303,10 @@ func TestMultiProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert response was received
+	price := big.NewInt(provider.DefaultPricePerByte.Int64())
 	expected := &shared.QueryResponse{
 		Params:                  params,
-		Total:                   big.NewInt(0),
+		Total:                   price,
 		PaymentInterval:         provider.DefaultPaymentInterval,
 		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}

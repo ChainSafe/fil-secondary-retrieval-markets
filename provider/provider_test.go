@@ -5,12 +5,12 @@ package provider
 
 import (
 	"context"
-	"math/big"
 	"testing"
 	"time"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/cache"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
+	"github.com/filecoin-project/specs-actors/actors/abi"
 	block "github.com/ipfs/go-block-format"
 	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
@@ -134,9 +134,58 @@ func TestProvider_Response(t *testing.T) {
 	resp := &shared.QueryResponse{
 		Params:                  query.Params,
 		Provider:                n.PeerID(),
-		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		PricePerByte:            p.pricePerByte,
+		PaymentInterval:         DefaultPaymentInterval,
+		PaymentIntervalIncrease: DefaultPaymentIntervalIncrease,
+	}
+
+	expected, err := resp.Marshal()
+	require.NoError(t, err)
+	time.Sleep(time.Millisecond * 10)
+	require.Equal(t, expected, n.sent)
+}
+
+func TestProvider_SetPricing(t *testing.T) {
+	n := newMockNetwork()
+	p := NewProvider(n, newTestRetrievalProviderStore(), cache.NewMockCache(testCacheSize))
+	err := p.Start()
+	require.NoError(t, err)
+
+	price := abi.NewTokenAmount(10)
+	p.SetPricePerByte(price)
+	interval := uint64(33)
+	increase := uint64(44)
+	p.SetPaymentInterval(interval, increase)
+
+	defer func() {
+		err = p.Stop()
+		require.NoError(t, err)
+	}()
+
+	b := block.NewBlock([]byte("noot"))
+	testCid := b.Cid()
+
+	err = p.store.(*mockRetrievalProviderStore).bs.Put(b)
+	require.NoError(t, err)
+
+	query := &shared.Query{
+		Params: shared.Params{
+			PayloadCID: testCid,
+		},
+		ClientAddrs: []string{testMultiAddrStr},
+	}
+
+	bz, err := query.Marshal()
+	require.NoError(t, err)
+
+	n.msgs <- bz
+
+	resp := &shared.QueryResponse{
+		Params:                  query.Params,
+		Provider:                n.PeerID(),
+		PricePerByte:            price,
+		PaymentInterval:         interval,
+		PaymentIntervalIncrease: increase,
 	}
 
 	expected, err := resp.Marshal()

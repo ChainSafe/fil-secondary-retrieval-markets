@@ -5,15 +5,27 @@ package provider
 
 import (
 	"context"
-	"math/big"
 	"reflect"
 	"sync"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
+	"github.com/filecoin-project/specs-actors/actors/abi"
 	logging "github.com/ipfs/go-log/v2"
 )
 
 var log = logging.Logger("provider")
+
+// DefaultPricePerByte is the charge per byte retrieved if the miner does
+// not specifically set it
+var DefaultPricePerByte = abi.NewTokenAmount(2)
+
+// DefaultPaymentInterval is the baseline interval, set to 1Mb
+// if the miner does not explicitly set it otherwise
+var DefaultPaymentInterval = uint64(1 << 20)
+
+// DefaultPaymentIntervalIncrease is the amount interval increases on each payment,
+// set to to 1Mb if the miner does not explicitly set it otherwise
+var DefaultPaymentIntervalIncrease = uint64(1 << 20)
 
 type ProviderSubscriber func(query shared.Query)
 type Unsubscribe func()
@@ -26,15 +38,23 @@ type Provider struct {
 	msgs            <-chan []byte
 	subscribers     []ProviderSubscriber
 	subscribersLock sync.Mutex
+
+	pricePerByte            abi.TokenAmount
+	paymentInterval         uint64
+	paymentIntervalIncrease uint64
+	priceLock               sync.Mutex
 }
 
 // NewProvider returns a new Provider
 func NewProvider(net Network, s RetrievalProviderStore, cache RequestCache) *Provider {
 	return &Provider{
-		net:         net,
-		store:       s,
-		cache:       cache,
-		subscribers: []ProviderSubscriber{},
+		net:                     net,
+		store:                   s,
+		cache:                   cache,
+		subscribers:             []ProviderSubscriber{},
+		pricePerByte:            DefaultPricePerByte,
+		paymentInterval:         DefaultPaymentInterval,
+		paymentIntervalIncrease: DefaultPaymentIntervalIncrease,
 	}
 }
 
@@ -53,6 +73,21 @@ func (p *Provider) Start() error {
 // Stop stops the provider
 func (p *Provider) Stop() error {
 	return p.net.Stop()
+}
+
+// SetPricePerByte sets the provider's pricePerByte
+func (p *Provider) SetPricePerByte(price abi.TokenAmount) {
+	p.priceLock.Lock()
+	defer p.priceLock.Unlock()
+	p.pricePerByte = price
+}
+
+// SetPaymentInterval sets the provider's paymentInterval and paymentIntervalIncrease
+func (p *Provider) SetPaymentInterval(interval, increase uint64) {
+	p.priceLock.Lock()
+	defer p.priceLock.Unlock()
+	p.paymentInterval = interval
+	p.paymentIntervalIncrease = increase
 }
 
 // SubscribeToQueries registers the given subscriber and calls it upon receiving queries
@@ -126,9 +161,9 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 	resp := &shared.QueryResponse{
 		Params:                  query.Params,
 		Provider:                p.net.PeerID(),
-		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		PricePerByte:            p.pricePerByte,
+		PaymentInterval:         p.paymentInterval,
+		PaymentIntervalIncrease: p.paymentIntervalIncrease,
 	}
 
 	addrs, err := shared.StringsToAddrInfos(query.ClientAddrs)

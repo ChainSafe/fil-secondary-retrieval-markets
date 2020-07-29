@@ -5,7 +5,6 @@ package test
 
 import (
 	"context"
-	"math/big"
 	"os"
 	"sort"
 	"testing"
@@ -131,9 +130,9 @@ func TestBasic(t *testing.T) {
 	expected := &shared.QueryResponse{
 		Params:                  params,
 		Provider:                pnet.PeerID(),
-		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		PricePerByte:            provider.DefaultPricePerByte,
+		PaymentInterval:         provider.DefaultPaymentInterval,
+		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}
 
 	select {
@@ -223,9 +222,9 @@ func TestMulti(t *testing.T) {
 		expected := &shared.QueryResponse{
 			Params:                  params,
 			Provider:                pnets[i].PeerID(),
-			Total:                   big.NewInt(0),
-			PaymentInterval:         0,
-			PaymentIntervalIncrease: 0,
+			PricePerByte:            provider.DefaultPricePerByte,
+			PaymentInterval:         provider.DefaultPaymentInterval,
+			PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 		}
 
 		select {
@@ -298,9 +297,9 @@ func TestMultiProvider(t *testing.T) {
 	// assert response was received
 	expected := &shared.QueryResponse{
 		Params:                  params,
-		Total:                   big.NewInt(0),
-		PaymentInterval:         0,
-		PaymentIntervalIncrease: 0,
+		PricePerByte:            provider.DefaultPricePerByte,
+		PaymentInterval:         provider.DefaultPaymentInterval,
+		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}
 
 	receivedFrom := []peer.ID{}

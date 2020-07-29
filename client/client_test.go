@@ -6,10 +6,10 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"math/big"
 	"os"
 	"testing"
 
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/provider"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -91,7 +91,7 @@ func TestClient_SubscribeToQueryResponses(t *testing.T) {
 	response := shared.QueryResponse{
 		Params:                  testParams,
 		Provider:                testPeerId,
-		Total:                   big.NewInt(10),
+		PricePerByte:            provider.DefaultPricePerByte,
 		PaymentInterval:         0,
 		PaymentIntervalIncrease: 0,
 	}

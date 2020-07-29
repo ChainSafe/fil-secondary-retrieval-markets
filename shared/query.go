@@ -5,8 +5,8 @@ package shared
 
 import (
 	"encoding/json"
-	"math/big"
 
+	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/ipfs/go-cid"
 	ipld "github.com/ipsn/go-ipfs/gxlibs/github.com/ipfs/go-ipld-format"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -54,10 +54,10 @@ func (q *Query) Unmarshal(bz []byte) error {
 type QueryResponse struct {
 	Params Params `json:"params"` // Requested data
 	// TODO: Do we need their FIL address as well?
-	Provider                peer.ID  `json:"provider"` // List of multiaddrs of the provider
-	Total                   *big.Int `json:"total"`    // Total cost
-	PaymentInterval         uint64   `json:"paymentInterval"`
-	PaymentIntervalIncrease uint64   `json:"paymentIntervalIncrease"`
+	Provider                peer.ID         `json:"provider"` // List of multiaddrs of the provider
+	PricePerByte            abi.TokenAmount `json:"pricePerByte"`
+	PaymentInterval         uint64          `json:"paymentInterval"`
+	PaymentIntervalIncrease uint64          `json:"paymentIntervalIncrease"`
 }
 
 // Marshal returns the JSON marshalled QueryResponse

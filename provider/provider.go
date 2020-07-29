@@ -5,7 +5,6 @@ package provider
 
 import (
 	"context"
-	"math/big"
 	"reflect"
 	"sync"
 
@@ -43,6 +42,7 @@ type Provider struct {
 	pricePerByte            abi.TokenAmount
 	paymentInterval         uint64
 	paymentIntervalIncrease uint64
+	priceLock               sync.Mutex
 }
 
 // NewProvider returns a new Provider
@@ -77,11 +77,15 @@ func (p *Provider) Stop() error {
 
 // SetPricePerByte sets the provider's pricePerByte
 func (p *Provider) SetPricePerByte(price abi.TokenAmount) {
+	p.priceLock.Lock()
+	defer p.priceLock.Unlock()
 	p.pricePerByte = price
 }
 
 // SetPaymentInterval sets the provider's paymentInterval and paymentIntervalIncrease
 func (p *Provider) SetPaymentInterval(interval, increase uint64) {
+	p.priceLock.Lock()
+	defer p.priceLock.Unlock()
 	p.paymentInterval = interval
 	p.paymentIntervalIncrease = increase
 }
@@ -154,16 +158,10 @@ func (p *Provider) sendResponse(query *shared.Query) error {
 		return ErrNoAddrsProvided
 	}
 
-	size, err := p.store.GetSize(query.Params)
-	if err != nil {
-		return err
-	}
-
-	price := big.NewInt(p.pricePerByte.Int64())
 	resp := &shared.QueryResponse{
 		Params:                  query.Params,
 		Provider:                p.net.PeerID(),
-		Total:                   big.NewInt(0).Mul(price, size),
+		PricePerByte:            p.pricePerByte,
 		PaymentInterval:         p.paymentInterval,
 		PaymentIntervalIncrease: p.paymentIntervalIncrease,
 	}

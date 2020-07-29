@@ -5,7 +5,6 @@ package provider
 
 import (
 	"context"
-	"math/big"
 	"testing"
 	"time"
 
@@ -24,7 +23,6 @@ import (
 var testMultiAddrStr = "/ip4/1.2.3.4/tcp/5678/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N"
 var testCacheSize = 64
 var testTimeout = time.Second * 15
-var testSize = big.NewInt(1)
 
 type mockNetwork struct {
 	msgs chan []byte
@@ -84,10 +82,6 @@ func (s *mockRetrievalProviderStore) Has(params shared.Params) (bool, error) {
 	return s.bs.Has(params.PayloadCID)
 }
 
-func (s *mockRetrievalProviderStore) GetSize(params shared.Params) (*big.Int, error) {
-	return testSize, nil
-}
-
 func newTestBlockstore() blockstore.Blockstore {
 	nds := ds.NewMapDatastore()
 	return blockstore.NewBlockstore(nds)
@@ -137,11 +131,10 @@ func TestProvider_Response(t *testing.T) {
 
 	n.msgs <- bz
 
-	price := big.NewInt(p.pricePerByte.Int64())
 	resp := &shared.QueryResponse{
 		Params:                  query.Params,
 		Provider:                n.PeerID(),
-		Total:                   price,
+		PricePerByte:            p.pricePerByte,
 		PaymentInterval:         DefaultPaymentInterval,
 		PaymentIntervalIncrease: DefaultPaymentIntervalIncrease,
 	}
@@ -187,11 +180,10 @@ func TestProvider_SetPricing(t *testing.T) {
 
 	n.msgs <- bz
 
-	total := big.NewInt(price.Int64())
 	resp := &shared.QueryResponse{
 		Params:                  query.Params,
 		Provider:                n.PeerID(),
-		Total:                   total,
+		PricePerByte:            price,
 		PaymentInterval:         interval,
 		PaymentIntervalIncrease: increase,
 	}

@@ -5,7 +5,6 @@ package test
 
 import (
 	"context"
-	"math/big"
 	"os"
 	"sort"
 	"testing"
@@ -28,7 +27,6 @@ import (
 )
 
 var testTimeout = time.Second * 30
-var testSize = big.NewInt(1)
 
 func newTestNetwork(t *testing.T) *network.Network {
 	ctx := context.Background()
@@ -62,10 +60,6 @@ func newTestRetrievalProviderStore() *mockRetrievalProviderStore {
 
 func (s *mockRetrievalProviderStore) Has(params shared.Params) (bool, error) {
 	return s.bs.Has(params.PayloadCID)
-}
-
-func (s *mockRetrievalProviderStore) GetSize(params shared.Params) (*big.Int, error) {
-	return testSize, nil
 }
 
 type basicTester struct {
@@ -133,11 +127,10 @@ func TestBasic(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert response was received
-	price := big.NewInt(provider.DefaultPricePerByte.Int64())
 	expected := &shared.QueryResponse{
 		Params:                  params,
 		Provider:                pnet.PeerID(),
-		Total:                   price,
+		PricePerByte:            provider.DefaultPricePerByte,
 		PaymentInterval:         provider.DefaultPaymentInterval,
 		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}
@@ -226,11 +219,10 @@ func TestMulti(t *testing.T) {
 		require.NoError(t, err)
 
 		// assert response was received
-		price := big.NewInt(provider.DefaultPricePerByte.Int64())
 		expected := &shared.QueryResponse{
 			Params:                  params,
 			Provider:                pnets[i].PeerID(),
-			Total:                   price,
+			PricePerByte:            provider.DefaultPricePerByte,
 			PaymentInterval:         provider.DefaultPaymentInterval,
 			PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 		}
@@ -303,10 +295,9 @@ func TestMultiProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert response was received
-	price := big.NewInt(provider.DefaultPricePerByte.Int64())
 	expected := &shared.QueryResponse{
 		Params:                  params,
-		Total:                   price,
+		PricePerByte:            provider.DefaultPricePerByte,
 		PaymentInterval:         provider.DefaultPaymentInterval,
 		PaymentIntervalIncrease: provider.DefaultPaymentIntervalIncrease,
 	}

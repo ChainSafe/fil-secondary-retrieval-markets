@@ -3,4 +3,4 @@
 .sublime/
 
 /bin
-/build
+build/

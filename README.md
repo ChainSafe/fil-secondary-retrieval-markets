@@ -1,7 +1,7 @@
 # Secondary Filecoin Retrieval Markets
 
 [![Build Status](https://travis-ci.com/ChainSafe/fil-secondary-retrieval-markets.svg?branch=main)](https://travis-ci.com/ChainSafe/fil-secondary-retrieval-markets)
-[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/ChainSafe/fil-secondary-retrieval-markets)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/mod/github.com/ChainSafe/fil-secondary-retrieval-markets)
 
 ❗**Current development should be considered a work in progress.**
 

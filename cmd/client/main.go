@@ -19,17 +19,12 @@ import (
 var (
 	log = logging.Logger("cli")
 
-	queryFlag = cli.StringFlag{
-		Name:  "query",
-		Usage: "submit query for a CID",
-	}
 	bootnodesFlag = cli.StringFlag{
 		Name:  "bootnodes",
 		Usage: "comma-separated list of peer addresses",
 	}
 
 	flags = []cli.Flag{
-		queryFlag,
 		bootnodesFlag,
 	}
 
@@ -56,7 +51,7 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
-	cidStr := ctx.String(queryFlag.Name)
+	cidStr := ctx.Args().First()
 	bootnodesStr := ctx.String(bootnodesFlag.Name)
 
 	n, err := newNetwork(bootnodesStr)
@@ -65,7 +60,7 @@ func run(ctx *cli.Context) error {
 	}
 
 	c := client.NewClient(n)
-	cid, err := cid.Decode(cidStr)
+	payloadCID, err := cid.Decode(cidStr)
 	if err != nil {
 		return err
 	}
@@ -84,7 +79,7 @@ func run(ctx *cli.Context) error {
 
 	// TODO: update cli to allow specifying PieceCID and Selector
 	params := shared.Params{
-		PayloadCID: cid,
+		PayloadCID: payloadCID,
 	}
 
 	h := newResponseHandler()

@@ -143,6 +143,7 @@ func (n *Network) Messages() <-chan []byte {
 // handleMessages puts each message received through the host's subscription into the host's msgs channel
 func (n *Network) handleMessages() {
 	for {
+		log.Info("got pubsub message")
 		msg, err := n.next()
 		if err != nil {
 			log.Warn("failed to get next message from subscription")

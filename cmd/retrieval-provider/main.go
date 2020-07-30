@@ -79,6 +79,8 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
+	log.Info("provider has ", ps.cids)
+
 	p := provider.NewProvider(net, ps, cache.NewLFUCache(1024))
 	p.Start()
 

@@ -109,7 +109,6 @@ func run(ctx *cli.Context) error {
 		}
 	}()
 
-	// TODO: update cli to allow specifying Selector
 	params := shared.Params{
 		PayloadCID: payloadCID,
 		PieceCID:   &pieceCID,

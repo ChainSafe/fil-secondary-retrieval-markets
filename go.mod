@@ -11,7 +11,6 @@ require (
 	github.com/ipfs/go-datastore v0.4.4
 	github.com/ipfs/go-ipfs-blockstore v1.0.0
 	github.com/ipfs/go-log/v2 v2.1.1
-	github.com/ipsn/go-ipfs v0.0.0-20190407150747-8b9b72514244
 	github.com/libp2p/go-libp2p v0.10.2
 	github.com/libp2p/go-libp2p-core v0.6.1
 	github.com/libp2p/go-libp2p-pubsub v0.3.3

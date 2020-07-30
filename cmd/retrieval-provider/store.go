@@ -17,8 +17,10 @@ func (s *ProviderStore) Has(params shared.Params) (bool, error) {
 		return true, nil
 	}
 
-	if _, has := s.cids[*params.PieceCID]; has {
-		return true, nil
+	if params.PieceCID != nil {
+		if _, has := s.cids[*params.PieceCID]; has {
+			return true, nil
+		}
 	}
 
 	return false, nil

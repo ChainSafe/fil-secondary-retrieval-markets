@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	log = logging.Logger("provider")
+	log = logging.Logger("provider-main")
 
 	dataFlag = cli.StringFlag{
 		Name:  "data",
@@ -54,6 +54,11 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
+	err = logging.SetLogLevel("provider-main", "debug")
+	if err != nil {
+		return err
+	}
+
 	dataStr := ctx.String(dataFlag.Name)
 	bootnodesStr := ctx.String(bootnodesFlag.Name)
 
@@ -78,7 +83,7 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 
-	log.Info("provider has ", ps.cids)
+	log.Debug("provider has ", ps.cids)
 
 	p := provider.NewProvider(net, ps, cache.NewLFUCache(1024))
 	err = p.Start()

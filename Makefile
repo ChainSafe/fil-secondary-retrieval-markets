@@ -1,7 +1,7 @@
 PROJECTNAME=$(shell basename "$(PWD)")
 GOLANGCI := $(GOPATH)/bin/golangci-lint
 
-.PHONY: help lint test
+.PHONY: help lint test build client provider install
 all: help
 help: Makefile
 	@echo
@@ -24,3 +24,13 @@ test:
 license:
 	./scripts/add_license.sh
 
+build: client provider
+
+client:
+	go build -o ./build/retrieval-client ./cmd/retrieval-client
+
+provider:
+	go build -o ./build/retrieval-provider ./cmd/retrieval-provider
+
+install:
+	cd cmd/retrieval-client && go install

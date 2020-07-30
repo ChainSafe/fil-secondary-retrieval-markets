@@ -9,7 +9,6 @@ import (
 
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/ipfs/go-cid"
-	ipld "github.com/ipsn/go-ipfs/gxlibs/github.com/ipfs/go-ipld-format"
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -17,7 +16,6 @@ import (
 type Params struct {
 	PayloadCID cid.Cid
 	PieceCID   *cid.Cid
-	Selector   ipld.Node
 }
 
 // Marshal returns the JSON marshalled Params

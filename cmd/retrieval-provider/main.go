@@ -4,7 +4,6 @@
 package main
 
 import (
-	//"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -86,8 +85,6 @@ func run(ctx *cli.Context) error {
 
 	log.Info("provider listening at ", net.MultiAddrs())
 
-	// TODO: wait for SIGTERM?
 	select {}
-
 	return nil
 }

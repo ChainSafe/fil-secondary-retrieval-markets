@@ -21,6 +21,11 @@ func NewNetwork(bootnodesStr string) (*network.Network, error) {
 		return nil, err
 	}
 
+	n, err := network.NewNetwork(h)
+	if err != nil {
+		return nil, err
+	}
+
 	// bootstrap to network
 	if bootnodesStr != "" {
 		strs := strings.Split(bootnodesStr, ",")
@@ -35,7 +40,8 @@ func NewNetwork(bootnodesStr string) (*network.Network, error) {
 		}
 	}
 
-	return network.NewNetwork(h)
+	//n.Start()
+	return n, nil
 }
 
 func bootstrap(h host.Host, bns []peer.AddrInfo) error {

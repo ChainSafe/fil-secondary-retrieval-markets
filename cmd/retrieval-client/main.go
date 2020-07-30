@@ -62,14 +62,16 @@ func run(ctx *cli.Context) error {
 
 	n, err := utils.NewNetwork(bootnodesStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create network", err)
 	}
 
 	c := client.NewClient(n)
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to decode query cid", err)
 	}
+
+	//log.Info("client listening at ", n.MultiAddrs())
 
 	err = c.Start()
 	if err != nil {
@@ -92,12 +94,19 @@ func run(ctx *cli.Context) error {
 	unsubscribe := c.SubscribeToQueryResponses(h.handleResponse, params)
 	defer unsubscribe()
 
-	err = c.SubmitQuery(context.Background(), params)
-	if err != nil {
-		return err
-	}
+	go func() {
+		for {
+			time.Sleep(time.Second * 5)
 
-	log.Info("submit query ", params)
+			err = c.SubmitQuery(context.Background(), params)
+			if err != nil {
+				//return err
+				continue
+			}
+
+			log.Info("submit query ", params)
+		}
+	}()
 
 	for {
 		select {

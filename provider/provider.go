@@ -125,7 +125,7 @@ func (p *Provider) handleMessages() {
 
 		p.notifySubscribers(*query)
 
-		log.Debug("received query for params", query.Params)
+		log.Info("received query for params", query.Params)
 		has, err := p.hasData(query.Params)
 		if err != nil {
 			log.Error("failed to check for data in blockstore; error:", err)

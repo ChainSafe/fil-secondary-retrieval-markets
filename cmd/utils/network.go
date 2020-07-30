@@ -40,7 +40,6 @@ func NewNetwork(bootnodesStr string) (*network.Network, error) {
 		}
 	}
 
-	//n.Start()
 	return n, nil
 }
 

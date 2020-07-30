@@ -81,10 +81,11 @@ func run(ctx *cli.Context) error {
 	log.Info("provider has ", ps.cids)
 
 	p := provider.NewProvider(net, ps, cache.NewLFUCache(1024))
-	p.Start()
+	err = p.Start()
+	if err != nil {
+		return err
+	}
 
 	log.Info("provider listening at ", net.MultiAddrs())
-
 	select {}
-	return nil
 }

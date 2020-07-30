@@ -71,8 +71,6 @@ func run(ctx *cli.Context) error {
 		return fmt.Errorf("failed to decode query cid", err)
 	}
 
-	//log.Info("client listening at ", n.MultiAddrs())
-
 	err = c.Start()
 	if err != nil {
 		return err

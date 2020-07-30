@@ -30,7 +30,7 @@ var (
 		Usage: "specifies a piece CID to query",
 	}
 
-	timeoutFlag = cli.Float64Flag{
+	timeoutFlag = cli.Int64Flag{
 		Name:  "timeout",
 		Usage: "Specify how long to listen for requests (seconds)",
 		Value: defaultResponseTimeout,
@@ -44,7 +44,7 @@ var (
 
 	app = cli.NewApp()
 
-	defaultResponseTimeout = time.Minute.Seconds()
+	defaultResponseTimeout = int64(time.Minute.Seconds())
 )
 
 func init() {
@@ -75,7 +75,7 @@ func run(ctx *cli.Context) error {
 	cidStr := ctx.Args().First()
 	pieceCIDStr := ctx.String(pieceCIDFlag.Name)
 	bootnodesStr := ctx.String(bootnodesFlag.Name)
-	timeout := ctx.Float64(timeoutFlag.Name)
+	timeout := ctx.Int64(timeoutFlag.Name)
 
 	n, err := newNetwork(bootnodesStr)
 	if err != nil {
@@ -132,7 +132,7 @@ func run(ctx *cli.Context) error {
 		select {
 		case resp := <-h.respCh:
 			log.Info("got response! ", resp)
-		case <-time.After(time.Duration(timeout)):
+		case <-time.After(time.Duration(time.Second.Nanoseconds() * timeout)):
 			log.Info("no responses received by timeout")
 			return nil
 		}

@@ -25,7 +25,7 @@ license:
 	./scripts/add_license.sh
 
 build:
-	cd cmd/retrieval-client && go build -o ../build/retrieval-client .
+	cd cmd/retrieval-client && go build -o ../../build/retrieval-client .
 
 install:
 	cd cmd/retrieval-client && go install

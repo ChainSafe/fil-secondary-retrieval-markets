@@ -17,30 +17,42 @@ import (
 )
 
 var (
-	log = logging.Logger("cli")
+	log = logging.Logger("main")
 
-	queryFlag = cli.StringFlag{
-		Name:  "query",
-		Usage: "submit query for a CID",
-	}
 	bootnodesFlag = cli.StringFlag{
 		Name:  "bootnodes",
 		Usage: "comma-separated list of peer addresses",
+		Required: true,
+	}
+
+	pieceCIDFlag = cli.StringFlag{
+		Name: "pieceCID",
+		Usage: "specifies a piece CID to query",
+	}
+
+	timeoutFlag = cli.Int64Flag{
+		Name:  "timeout",
+		Usage: "Specify how long to listen for requests (seconds)",
+		Value: defaultResponseTimeout,
 	}
 
 	flags = []cli.Flag{
-		queryFlag,
 		bootnodesFlag,
+		pieceCIDFlag,
+		timeoutFlag,
 	}
 
 	app = cli.NewApp()
 
-	responseTimeout = time.Minute
+	defaultResponseTimeout = int64(time.Minute.Seconds())
 )
 
 func init() {
 	app.Action = run
+	app.Name = "retrieval-client"
 	app.Flags = flags
+	app.Usage = "Client for secondary retrieval markets"
+	app.UsageText = "retrieval-client [options] <CID>"
 }
 
 func main() {
@@ -55,9 +67,15 @@ func run(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	err = logging.SetLogLevel("main", "debug")
+	if err != nil {
+		return err
+	}
 
-	cidStr := ctx.String(queryFlag.Name)
+	cidStr := ctx.Args().First()
+	pieceCIDStr := ctx.String(pieceCIDFlag.Name)
 	bootnodesStr := ctx.String(bootnodesFlag.Name)
+	timeout := ctx.Int64(timeoutFlag.Name)
 
 	n, err := newNetwork(bootnodesStr)
 	if err != nil {
@@ -65,9 +83,17 @@ func run(ctx *cli.Context) error {
 	}
 
 	c := client.NewClient(n)
-	cid, err := cid.Decode(cidStr)
+	var payloadCID, pieceCID cid.Cid
+	payloadCID, err = cid.Decode(cidStr)
 	if err != nil {
 		return err
+	}
+
+	if pieceCIDStr != "" {
+		pieceCID, err = cid.Decode(pieceCIDStr)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = c.Start()
@@ -82,9 +108,16 @@ func run(ctx *cli.Context) error {
 		}
 	}()
 
-	// TODO: update cli to allow specifying PieceCID and Selector
+	// TODO: update cli to allow specifying Selector
 	params := shared.Params{
-		PayloadCID: cid,
+		PayloadCID: payloadCID,
+		PieceCID: &pieceCID,
+	}
+
+	if pieceCIDStr != "" {
+		log.Infof("Querying for payload %s and piece %s", payloadCID, pieceCIDStr)
+	} else {
+		log.Infof("Querying for payload %s", payloadCID)
 	}
 
 	h := newResponseHandler()
@@ -95,14 +128,11 @@ func run(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	log.Info("submit query ", params)
-
 	for {
 		select {
 		case resp := <-h.respCh:
 			log.Info("got response! ", resp)
-		case <-time.After(responseTimeout):
+		case <-time.After(time.Duration(time.Second.Nanoseconds() * timeout)):
 			log.Info("no responses received by timeout")
 			return nil
 		}

@@ -5,6 +5,7 @@ package shared
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/filecoin-project/specs-actors/actors/abi"
 	"github.com/ipfs/go-cid"
@@ -68,4 +69,14 @@ func (q *QueryResponse) Marshal() ([]byte, error) {
 // Unmarshal JSON unmarshals the input into a QueryResponse
 func (q *QueryResponse) Unmarshal(bz []byte) error {
 	return json.Unmarshal(bz, q)
+}
+
+func (q *QueryResponse) String() string {
+	return fmt.Sprintf("params=%v provider=%s pricePerByte=%d paymentInterval=%d paymentIntervalIncrease=%d",
+		q.Params,
+		q.Provider,
+		q.PricePerByte,
+		q.PaymentInterval,
+		q.PaymentIntervalIncrease,
+	)
 }

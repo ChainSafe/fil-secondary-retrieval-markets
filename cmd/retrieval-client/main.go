@@ -92,24 +92,18 @@ func run(ctx *cli.Context) error {
 	unsubscribe := c.SubscribeToQueryResponses(h.handleResponse, params)
 	defer unsubscribe()
 
-	go func() {
-		for {
-			time.Sleep(time.Second * 5)
+	time.Sleep(time.Second)
+	err = c.SubmitQuery(context.Background(), params)
+	if err != nil {
+		return err
+	}
 
-			err = c.SubmitQuery(context.Background(), params)
-			if err != nil {
-				//return err
-				continue
-			}
-
-			log.Info("submit query ", params)
-		}
-	}()
+	log.Info("submit query ", params)
 
 	for {
 		select {
 		case resp := <-h.respCh:
-			log.Info("got response! ", resp)
+			log.Info("got response from provider ", resp)
 		case <-time.After(responseTimeout):
 			log.Info("no responses received by timeout")
 			return nil

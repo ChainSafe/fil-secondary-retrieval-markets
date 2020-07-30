@@ -149,8 +149,6 @@ func (n *Network) handleMessages() {
 			continue
 		}
 
-		log.Info("\tgot pubsub message")
-
 		if msg != nil {
 			n.msgs <- msg.Data
 		}

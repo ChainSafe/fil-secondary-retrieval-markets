@@ -62,13 +62,13 @@ func run(ctx *cli.Context) error {
 
 	n, err := utils.NewNetwork(bootnodesStr)
 	if err != nil {
-		return fmt.Errorf("failed to create network", err)
+		return fmt.Errorf("failed to create network: %s", err)
 	}
 
 	c := client.NewClient(n)
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
-		return fmt.Errorf("failed to decode query cid", err)
+		return fmt.Errorf("failed to decode query cid: %s", err)
 	}
 
 	err = c.Start()

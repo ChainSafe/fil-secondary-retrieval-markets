@@ -1,7 +1,7 @@
 // Copyright 2020 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-package main
+package utils
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestBootstrap(t *testing.T) {
-	net0, err := newNetwork("")
+	net0, err := NewNetwork("")
 	require.NoError(t, err)
 
 	maddrs := net0.MultiAddrs()
@@ -23,7 +23,7 @@ func TestBootstrap(t *testing.T) {
 		}
 	}
 
-	net1, err := newNetwork(str)
+	net1, err := NewNetwork(str)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(net1.Peers()), 1)
 }

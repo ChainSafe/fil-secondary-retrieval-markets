@@ -1,7 +1,7 @@
 // Copyright 2020 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-package main
+package utils
 
 import (
 	"context"
@@ -14,9 +14,14 @@ import (
 	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
-func newNetwork(bootnodesStr string) (*network.Network, error) {
+func NewNetwork(bootnodesStr string) (*network.Network, error) {
 	ctx := context.Background()
 	h, err := libp2p.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	n, err := network.NewNetwork(h)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +40,7 @@ func newNetwork(bootnodesStr string) (*network.Network, error) {
 		}
 	}
 
-	return network.NewNetwork(h)
+	return n, nil
 }
 
 func bootstrap(h host.Host, bns []peer.AddrInfo) error {

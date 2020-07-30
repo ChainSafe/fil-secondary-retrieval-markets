@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/client"
+	"github.com/ChainSafe/fil-secondary-retrieval-markets/cmd/utils"
 	"github.com/ChainSafe/fil-secondary-retrieval-markets/shared"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log/v2"
@@ -17,16 +18,16 @@ import (
 )
 
 var (
-	log = logging.Logger("main")
+	log = logging.Logger("client-main")
 
 	bootnodesFlag = cli.StringFlag{
-		Name:  "bootnodes",
-		Usage: "comma-separated list of peer addresses",
+		Name:     "bootnodes",
+		Usage:    "comma-separated list of peer addresses",
 		Required: true,
 	}
 
 	pieceCIDFlag = cli.StringFlag{
-		Name: "pieceCID",
+		Name:  "pieceCID",
 		Usage: "specifies a piece CID to query",
 	}
 
@@ -67,7 +68,7 @@ func run(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	err = logging.SetLogLevel("main", "debug")
+	err = logging.SetLogLevel("client-main", "debug")
 	if err != nil {
 		return err
 	}
@@ -77,16 +78,16 @@ func run(ctx *cli.Context) error {
 	bootnodesStr := ctx.String(bootnodesFlag.Name)
 	timeout := ctx.Int64(timeoutFlag.Name)
 
-	n, err := newNetwork(bootnodesStr)
+	n, err := utils.NewNetwork(bootnodesStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create network: %s", err)
 	}
 
 	c := client.NewClient(n)
 	var payloadCID, pieceCID cid.Cid
 	payloadCID, err = cid.Decode(cidStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to decode query cid: %s", err)
 	}
 
 	if pieceCIDStr != "" {
@@ -108,10 +109,9 @@ func run(ctx *cli.Context) error {
 		}
 	}()
 
-	// TODO: update cli to allow specifying Selector
 	params := shared.Params{
 		PayloadCID: payloadCID,
-		PieceCID: &pieceCID,
+		PieceCID:   &pieceCID,
 	}
 
 	if pieceCIDStr != "" {
@@ -124,6 +124,7 @@ func run(ctx *cli.Context) error {
 	unsubscribe := c.SubscribeToQueryResponses(h.handleResponse, params)
 	defer unsubscribe()
 
+	time.Sleep(time.Second)
 	err = c.SubmitQuery(context.Background(), params)
 	if err != nil {
 		return err
@@ -131,7 +132,7 @@ func run(ctx *cli.Context) error {
 	for {
 		select {
 		case resp := <-h.respCh:
-			log.Info("got response! ", resp)
+			log.Info("got response from provider ", resp)
 		case <-time.After(time.Duration(time.Second.Nanoseconds() * timeout)):
 			log.Info("no responses received by timeout")
 			return nil
